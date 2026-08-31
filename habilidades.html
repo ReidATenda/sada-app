@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>SADA — Habilidades</title>
+  <link rel="icon" href="icon-192.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1a1a1a; --bg-card: #242424; --bg-dark: #0e0e0e;
+      --text: #e8e3d3; --text-dim: #b0a992; --text-bright: #ffffff;
+      --gold: #c9a84c; --gold-dim: #8a7233;
+      --tank: #6b8f5e; --suporte: #4fa9a2; --dps: #d9924a;
+      --border: rgba(255,255,255,0.06);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Work Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:2rem; }
+
+    .header { display:flex; align-items:center; gap:.75rem; padding:1rem 1.25rem; background:var(--bg-dark); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+    .header h1 { font-family:'Fraunces',serif; font-size:1.15rem; color:var(--gold); flex:1; }
+    .btn-voltar { background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:.4rem .8rem; border-radius:8px; font-size:.85rem; cursor:pointer; text-decoration:none; }
+
+    .tabs { display:flex; gap:.5rem; padding:1rem 1.25rem .5rem; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab-btn { flex-shrink:0; padding:.5rem 1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-dim); font-family:'Work Sans',sans-serif; font-size:.85rem; font-weight:500; cursor:pointer; transition:all .2s; }
+    .tab-btn.active { color:var(--text-bright); font-weight:600; }
+    .tab-btn[data-classe="Tank"].active { background:var(--tank); border-color:var(--tank); }
+    .tab-btn[data-classe="Suporte"].active { background:var(--suporte); border-color:var(--suporte); }
+    .tab-btn[data-classe="DPS"].active { background:var(--dps); border-color:var(--dps); }
+
+    .content { padding:0 1.25rem; }
+    .level-group { margin-top:1rem; }
+    .level-header { display:flex; align-items:center; gap:.6rem; margin-bottom:.5rem; }
+    .level-badge { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:.9rem; font-weight:600; color:var(--text-bright); flex-shrink:0; }
+    .level-badge.tank { background:var(--tank); }
+    .level-badge.suporte { background:var(--suporte); }
+    .level-badge.dps { background:var(--dps); }
+    .level-label { font-size:.8rem; color:var(--text-dim); }
+    .level-label strong { color:var(--text); font-weight:600; }
+
+    .ability-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:.8rem 1rem; margin-bottom:.5rem; }
+    .ability-name { font-weight:600; font-size:.95rem; color:var(--text-bright); margin-bottom:.25rem; }
+    .ability-desc { font-size:.82rem; color:var(--text-dim); line-height:1.45; }
+
+    .no-ability { color:var(--text-dim); font-size:.82rem; font-style:italic; padding:.3rem 0 .3rem .75rem; opacity:.6; }
+
+    .class-header { text-align:center; padding:1.25rem 0 .5rem; }
+    .class-header h2 { font-family:'Fraunces',serif; font-size:1.3rem; color:var(--text-bright); }
+    .class-header p { font-size:.82rem; color:var(--text-dim); margin-top:.25rem; }
+    .class-header .class-icon { font-size:2rem; margin-bottom:.3rem; }
+
+    @media(max-width:400px){
+      .tab-btn { padding:.45rem .75rem; font-size:.8rem; }
+      .level-badge { width:32px; height:32px; font-size:.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="sada-app-v10.html" class="btn-voltar">← Voltar</a>
+  <h1>Habilidades</h1>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-classe="Tank">🛡️ Tank</button>
+  <button class="tab-btn" data-classe="Suporte">💚 Suporte</button>
+  <button class="tab-btn" data-classe="DPS">⚔️ DPS</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<script>
+const HABILIDADES = {
+  Tank: {
+    1: { nome:"Melhor Ambiente I", desc:"Pode sair a qualquer momento da aula para fazer as missões diárias." },
+    2: { nome:"Recrutar +1 e Missionário", desc:"O número de players da guilda é agora de 2 a 7. Pode ganhar 100XP por semana elaborando missões no quadro de missões." },
+    3: { nome:"Guilda Unida", desc:"Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+    4: { nome:"Auditor", desc:"Se todas as fiscalizações estiverem em dia, ganha 1/2 ponto no Boss." },
+    5: { nome:"Clarividência", desc:"Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+    6: { nome:"Melhor Ambiente II", desc:"Pode levar algum outro player para realizar as missões diárias." },
+    7: { nome:"PUG por Nível", desc:"O GM é obrigado a formar PUGs com players do mesmo nível." },
+    8: { nome:"Recrutar +2 e PUG Esperto", desc:"O número de players da guilda é agora de 2 a 8. Pode trazer algum DPS de sua guilda para o PUG do GM." },
+    9: { nome:"Uso de Artefato", desc:"Pode levar uma folha de consulta para qualquer Boss." },
+    10: { nome:"Adiantado", desc:"Pede a correção de um item dissertativo de qualquer Boss. O GM dá certo, meio certo ou errado, e você pode refazer a questão." },
+    12: { nome:"Redator", desc:"Se entregar um trabalho escrito sobre o seminário, não precisa apresentar com o grupo e não sofre penalidade durante o PUG." },
+    14: { nome:"Incapacitar", desc:"Anula uma questão (ou item) em um Boss. O valor do Boss é recalculado em porcentagem." },
+    15: { nome:"Onisciência", desc:"Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+    17: { nome:"Boss Auto-Kill", desc:"Recebe automaticamente a maior nota possível em um Boss." }
+  },
+  Suporte: {
+    1: { nome:"Invocar GM", desc:"Pode tirar dúvidas com o GM sobre qualquer missão." },
+    2: { nome:"Internerd", desc:"Recebe 400XP por mês se postar notícia relevante no mural de missões, ligada aos assuntos vistos em sala." },
+    3: { nome:"Guilda Unida", desc:"Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+    4: { nome:"Abençoar", desc:"Recebe uma questão extra durante o Boss. Se acertar, ganha 1/2 ponto para si e 1/2 ponto para doar a qualquer DPS ou Tank (não cumulativo)." },
+    5: { nome:"Clarividência", desc:"Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+    6: { nome:"Aparelho Divino", desc:"Pode usar o celular para consulta em missões quando necessário, avisando o GM." },
+    7: { nome:"PUG por Nível", desc:"O GM é obrigado a formar PUGs com players do mesmo nível." },
+    8: { nome:"Oração", desc:"Pode responder diariamente UMA missão oralmente ao GM, sem precisar escrevê-la (o Fiscal deve ser avisado)." },
+    9: { nome:"Uso de Artefato", desc:"Pode levar uma folha de consulta para qualquer Boss." },
+    10: { nome:"Clemência", desc:"Pode complementar uma questão de qualquer Boss, se estiver meio certa. Prazo de uma semana após o Boss." },
+    12: { nome:"Vidente", desc:"Pode escolher a data e ordem de qualquer apresentação de Seminário. Em conflito com outro Suporte, prioridade para o maior XP." },
+    14: { nome:"Inspiração Divina", desc:"Pode pedir uma dica do GM durante qualquer Boss (sem confirmação de certo ou errado)." },
+    15: { nome:"Onisciência", desc:"Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+    17: { nome:"Boss Auto-Kill", desc:"Recebe automaticamente a maior nota possível em um Boss." }
+  },
+  DPS: {
+    1: { nome:"Prazo Estendido I", desc:"Anula a fiscalização de UMA missão por dia, no início ou fim da aula, sem perder o XP (recebido na próxima fiscalização)." },
+    2: { nome:"Quest Semanal", desc:"Pode ganhar 100XP por semana comentando nos vídeos e textos do mural de missões." },
+    3: { nome:"Guilda Unida", desc:"Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+    4: { nome:"Tiro Certeiro", desc:"Circula uma questão dissertativa do Boss; se acertá-la, ganha mais 1/2 ponto." },
+    5: { nome:"Clarividência", desc:"Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+    6: { nome:"Prazo Estendido II", desc:"Pode anular a fiscalização de TODAS as missões no início da aula, e mais UMA ao fim da aula." },
+    7: { nome:"PUG por Nível", desc:"O GM é obrigado a formar PUGs com players do mesmo nível." },
+    8: { nome:"Faltei Sim", desc:"Até 3 faltas em um mês não anulam sua assiduidade." },
+    9: { nome:"Uso de Artefato", desc:"Pode levar uma folha de consulta para qualquer Boss." },
+    10: { nome:"Innuendo", desc:"Pode passar uma cola pelo GM para qualquer DPS. Se não for percebida, ela chega ao destino." },
+    12: { nome:"Armado", desc:"Pode ter um papel em mãos no seminário sem ser penalizado por isso (uso excessivo ainda penaliza)." },
+    14: { nome:"Ataque Crítico", desc:"Escolhe uma questão dissertativa de qualquer Boss, que valerá um ponto a mais." },
+    15: { nome:"Onisciência", desc:"Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+    17: { nome:"Boss Auto-Kill", desc:"Recebe automaticamente a maior nota possível em um Boss." }
+  }
+};
+
+const CLASS_META = {
+  Tank:    { icon:'🛡️', label:'Tank',    desc:'Resistência, organização e liderança de guilda' },
+  Suporte: { icon:'💚', label:'Suporte', desc:'Auxílio, flexibilidade e poder divino' },
+  DPS:     { icon:'⚔️', label:'DPS',     desc:'Dano, prazo estendido eofensiva' }
+};
+
+const MAX_LEVEL = 20;
+const ABILITY_LEVELS = [1,2,3,4,5,6,7,8,9,10,12,14,15,17];
+
+let currentClasse = 'Tank';
+
+function render(){
+  const classe = currentClasse;
+  const meta = CLASS_META[classe];
+  const tabela = HABILIDADES[classe];
+  const badgeClass = classe.toLowerCase();
+
+  let html = `
+    <div class="class-header">
+      <div class="class-icon">${meta.icon}</div>
+      <h2>${meta.label}</h2>
+      <p>${meta.desc}</p>
+    </div>`;
+
+  for(let lv = 1; lv <= MAX_LEVEL; lv++){
+    const hab = tabela[lv];
+    const hasAbility = !!hab;
+    const xpTotal = lv * 1000;
+
+    html += `
+      <div class="level-group">
+        <div class="level-header">
+          <div class="level-badge ${badgeClass}">${lv}</div>
+          <div class="level-label"><strong>Nível ${lv}</strong> · ${xpTotal} XP</div>
+        </div>`;
+
+    if(hasAbility){
+      html += `
+        <div class="ability-card">
+          <div class="ability-name">${hab.nome}</div>
+          <div class="ability-desc">${hab.desc}</div>
+        </div>`;
+    } else {
+      html += `<div class="no-ability">Nenhuma habilidade nova neste nível</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if(!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentClasse = btn.dataset.classe;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

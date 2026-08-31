@@ -1,0 +1,330 @@
+# SADA — Sistema de Acompanhamento de Alunos
+
+## Documento Explicativo Completo
+
+---
+
+## 1. O que é o SADA?
+
+O **SADA (Sistema de Acompanhamento de Alunos)** é uma ferramenta web gamificada desenvolvida para o professor de Biologia gerenciar turmas do ensino médio, transformando a gestão de classe em uma experiência imersiva inspirada em jogos de RPG (Role-Playing Games).
+
+O sistema funciona como um aplicativo offline-first (funciona sem internet após a primeira instalação), acessível pelo celular do professor, e sincroniza automaticamente com a nuvem quando há conexão.
+
+---
+
+## 2. Funcionalidades Principais
+
+### 2.1 Sistema de XP e Níveis
+
+- Cada aluno começa com **0 XP** e sobe de nível a cada **1.000 XP**
+- O nível máximo é **20** (equivalente a 20.000 XP total)
+- O nível é calculado automaticamente: `nível = Math.floor(XP / 1000)`
+- Um anel visual ao redor do nível mostra o progresso para o próximo nível
+
+**Fontes de XP:**
+
+| Fonte | XP | Frequência |
+|---|---|---|
+| Missão diária (tarefa de casa) | +100 XP | Por missão entregue |
+| Boss (prova/trabalho) | nota × 100 | Por avaliação |
+| Assiduidade (zero faltas no mês) | +400 XP | Mensal |
+| Guilda Unida (Nv3+) | +100 XP por guilda mate | Mensal |
+| Auditor (Tank Nv4+, zero faltas) | +50 XP | Mensal |
+
+### 2.2 Classes de Personagem
+
+O sistema possui **3 classes**, cada uma com habilidades exclusivas que desbloqueiam conforme o nível sobe:
+
+#### 🛡️ Tank (Tanque)
+- **Foco:** Resistência, organização e liderança de guilda
+- **Habilidades-chave:** Melhor Ambiente (sair da aula para missões), Recrutar (aumentar tamanho da guilda), Auditor (+0.5 ponto se fiscalizações em dia), Incapacitar (anular questão no Boss), Boss Auto-Kill (Nv17)
+
+#### 💚 Suporte
+- **Foco:** Auxílio, flexibilidade e poder divino
+- **Habilidades-chave:** Invocar GM (tirar dúvidas), Internerd (+400 XP/mês por notícia), Abençoar (quest extra no Boss), Oração (missões orais), Clemência (complementar questões)
+
+#### ⚔️ DPS (Dano Por Segundo)
+- **Foco:** Dano, prazo estendido e ofensiva
+- **Habilidades-chave:** Prazo Estendido (anular faltas), Quest Semanal (+100 XP/semana), Tiro Certeiro (+0.5 ponto), Faltei Sim (até 3 faltas perdoadas), Ataque Crítico (quest vale +1 ponto)
+
+### 2.3 Sistema de Guildas
+
+- Os alunos são organizados em **guildas** (grupos de 2-8 jogadores)
+- A guilda é definida pelo professor no cadastro
+- Habilidades como **Guilda Unida** (Nv3) recompensam jogadores que estão no mesmo nível dentro da mesma guilda
+
+### 2.4 Boss (Avaliações)
+
+- O professor cria **Bosses** (provas, trabalhos, seminários)
+- Ao lançar a nota de0 a10, o XP é calculado automaticamente (nota ×100)
+- Alunos nível17+ recebem **Boss Auto-Kill** (nota10 automática)
+- Tanks Nv14+ podem usar **Incapacitar** para anular uma questão (notas recalculadas ×0.8)
+
+### 2.5 Sistema de Presença e Assiduidade
+
+- **Chamada:** Marca quem faltou em cada dia de aula
+- **Prazo Estendido I (DPS Nv1):** Checkbox "Perdoar" para anular falta individual
+- **Prazo Estendido II (DPS Nv6):** Botão "Perdoar todos DPS Nv6+"
+- **Faltei Sim (DPS Nv8):** Até3 faltas no mês não cancelam assiduidade
+- **Fechar Mês:** Aplica +400 XP para quem não teve falta + bônus de Guilda Unida e Auditor
+
+### 2.6 Calendário
+
+- Grade de6×7(42 células) mostrando o mês atual
+- Dias com aula marcados com borda dourada
+- Dias com chamada registrada: verde
+- Dias com atividade anotada: azul
+- Dias de meses adjacentes aparecem com opacidade reduzida
+
+### 2.7 Horários
+
+- Cadastro dos dias e horários de aula por turma
+- Validação: chamada e conteúdo só podem ser registrados em dias com aula programada
+- O calendário usa os horários para marcar dias com aula
+
+### 2.8 Log de XP
+
+- Registro completo de toda movimentação de XP
+- Filtro por série
+- Mostra data, tipo de origem, valor e detalhes
+- Permite reverter XP (desfazer erros)
+
+### 2.9 Alertas de Habilidades
+
+- Ao expandir o card do aluno, aparece **"Ações disponíveis hoje"**
+- Mostra qual habilidade o aluno pode usar baseado na classe e nível
+- Toggle **⚡ Alertas: ON/OFF** no header para ativar/desativar
+
+---
+
+## 3. Arquitetura Técnica
+
+### 3.1 Stack Tecnológica
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript vanilla |
+| Backend/Banco | Firebase Firestore (NoSQL) |
+| Autenticação | Firebase Auth (email/senha) |
+| Offline | Service Worker + Firestore Offline Persistence |
+| Hospedagem | Node.js custom (PM2) na máquina do professor |
+| Acesso | PWA (Progressive Web App) instalável no celular |
+
+### 3.2 Fluxo de Dados
+
+```
+Celular (PWA) ←→ Firebase Firestore (Nuvem) ←→ PC do Professor
+         ↓                    ↓
+    Cache Local          Dados Persistentes
+    (Service Worker)     (Firestore Offline)
+```
+
+1. **Primeira vez:** Professor acessa pelo PC → faz login → instala PWA no celular
+2. **Uso offline:** Dados ficam salvos localmente no celular
+3. **Sincronização:** Quando o celular tem internet, sincroniza automaticamente com Firebase
+4. **PC:** Acessa os mesmos dados pelo navegador (mesmo Firebase)
+
+### 3.3 Collections Firestore
+
+| Collection | Descrição |
+|---|---|
+| `players` | Dados dos alunos (nome, série, classe, guilda, XP) |
+| `bosses` | Bosses criados (nome, série) |
+| `bosses/{id}/notas` | Notas dos alunos em cada Boss |
+| `faltas` | Registro de faltas (aluno, data, série) |
+| `chamadas_feitas` | Datas em que a chamada foi registrada |
+| `assiduidade` | Quem já recebeu +400 XP de assiduidade |
+| `guilda_unida` | Quem já recebeu XP de Guilda Unida |
+| `auditor_bonus` | Quem já recebeu +50 XP de Auditor |
+| `horarios` | Horários de aula por turma |
+| `diario` | Anotações diárias do professor |
+| `xpLog` | Log completo de toda movimentação de XP |
+
+---
+
+## 4. Embasamento Científico
+
+A gamificação no SADA não é apenas uma estética visual — ela é fundamentada em princípios psicológicos e pedagógicos com respaldo científico:
+
+### 4.1 Teoria do Autodeterminação (Deci & Ryan, 1985; 2000)
+
+A **Teoria do Autodeterminação (TDA)** é uma das bases teóricas mais robustas para entender por que a gamificação funciona em educação. Ela postula que a motivação intrínseca é sustentada por três necessidades psicológicas básicas:
+
+- **Autonomia:** O aluno escolhe sua classe, gerencia sua guilda e toma decisões sobre suas habilidades. No SADA, o sistema de classes (Tank/Suporte/DPS) oferece diferentes caminhos de progressão, permitindo que o aluno sinta que tem controle sobre sua jornada.
+
+- **Competência:** O sistema de XP e níveis oferece feedback contínuo sobre o progresso. Cada missão completada, cada Boss derrotado, cada nível alcançado reforça a sensação de domínio. O growth ring visual (anel de progresso) é um exemplo de feedback imediato.
+
+- **Relacionamento:** O sistema de guildas cria vínculos entre os alunos. A habilidade "Guilda Unida" (Nv3) recompensa jogadores que estão no mesmo nível dentro da mesma guilda, incentivando colaboração e senso de pertencimento.
+
+**Referência:** Deci, E. L., & Ryan, R. M. (2000). The "what" and "why" of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227-268.
+
+### 4.2 Teoria do Fluxo (Csikszentmihalyi, 1990)
+
+O **estado de fluxo** é aquele em que a pessoa está completamente imersa em uma atividade, com equilíbrio entre o desafio e a habilidade. O SADA mantém os alunos em fluxo ao:
+
+- Oferecer desafios progressivos (níveis1-20 com habilidades cada vez mais poderosas)
+- Dar feedback imediato (barra de XP, growth ring, log de XP)
+- Equilibrar dificuldade (Bosses com notas de0 a10, com habilidades que facilitam progressivamente)
+
+**Referência:** Csikszentmihalyi, M. (1990). *Flow: The psychology of optimal experience*. Harper & Row.
+
+### 4.3 Gamificação e Engajamento Escolar (Revisão Sistemática, 2024)
+
+Uma revisão sistemática publicada na *Frontiers in Education* (Ruiz et al., 2024) analisou90 artigos sobre gamificação em educação fundamental e média e concluiu que:
+
+> "A gamificação contribui para o processo de aprendizagem quando as experiências em sala de aula permitem o desenvolvimento de habilidades experenciais, participativas e criativas."
+
+O estudo destaca que elementos como **pontos, insignias, rankings e desafios** aumentam significativamente a participação dos alunos e promovem um ambiente de aprendizagem mais dinâmico e interativo.
+
+**Referência:** Ruiz, J. J., Vargas, A. D., & Figueredo, O. R. B. (2024). Impact of gamification on school engagement: a systematic review. *Frontiers in Education, 9*, 1466926.
+
+### 4.4 Benefícios Cognitivos, Afetivos e Comportamentais
+
+Dehghanzadeh et al. (2024) destacam que a gamificação na educação K-12 tem potencial para melhorar:
+
+- **Domínio cognitivo:** Retenção de conhecimento, resolução de problemas
+- **Domínio afetivo:** Motivação, prazer, autoeficácia
+- **Domínio comportamental:** Participação, persistência, frequência
+
+O SADA aborda os três domínios:
+- **Cognitivo:** Bosses (avaliações) + Consulta (habilidades de artefato)
+- **Afetivo:** XP, níveis, habilidades, sensação de progressão
+- **Comportamental:** Chamada, assiduidade, missões diárias
+
+**Referência:** Dehghanzadeh, H., et al. (2024). Gamification in K-12 education: A systematic review. *Education and Information Technologies*.
+
+### 4.5 Construtivismo e Aprendizagem Ativa
+
+O SADA segue os princípios do **construtivismo** (Piaget, 1970; Vygotsky, 1978), onde o aluno é ativo no processo de construção do conhecimento:
+
+- O aluno **faz** (completa missões, participa de Bosses)
+- O aluno **reflete** (vê seu progresso, compara com colegas)
+- O aluno **colabora** (guildas, habilidades de grupo)
+- O aluno **decide** (escolhe classe, gerencia habilidades)
+
+### 4.6 Feedback Imediato e Aprendizagem
+
+Pesquisas mostram que o **feedback imediato** é um dos fatores mais importantes para a aprendizagem (Hattie & Timperley, 2007). O SADA oferece:
+
+- Feedback visual instantâneo (barra de XP preenchendo)
+- Feedback numérico (XP adicionado, nível alcançado)
+- Feedback de longo prazo (ranking, habilidades desbloqueadas)
+- Log de XP (histórico completo de movimentações)
+
+**Referência:** Hattie, J., & Timperley, H. (2007). The power of feedback. *Review of Educational Research, 77*(1), 81-112.
+
+### 4.7 Motivação por Colegas (Peer Effects)
+
+O sistema de guildas e rankings cria **efeitos de motivação por colegas** (peer effects), onde o progresso de um colega estimula o outro. Estudos mostram que competições saudáveis e colaboração em grupo aumentam o engajamento (Tauer & Harackiewicz, 2004).
+
+No SADA:
+- Rankings mostram quem está à frente
+- Guildas criam senso de responsabilidade mútua
+- Habilidades como "Guilda Unida" recompensam o grupo
+
+---
+
+## 5. Como Usar o SADA
+
+### 5.1 Configuração Inicial
+
+1. **Criar conta:** Acesse `http://[IP-do-PC]:3000/login.html` e crie uma conta
+2. **Cadastrar horários:** Vá em "Horários" e registre os dias/horários de aula de cada turma
+3. **Cadastrar players:** Vá em "Cadastro de Players" e adicione os alunos
+4. **Instalar PWA:** No celular, acesse pelo Chrome → "Adicionar à tela inicial"
+
+### 5.2 Rotina Diária
+
+1. **Abrir o SADA** pelo ícone no celular
+2. **Ver alertas** no Painel para ver quem tem ações disponíveis
+3. **Registrar chamada** em "Presença" → marcar faltas → salvar
+4. **Dar XP** com botão "+100 XP para presentes"
+5. **Lançar notas** de Boss quando houver avaliação
+
+### 5.3 Rotina Mensal
+
+1. **Fechar mês** em "Presença" → aplica assiduidade + Guilda Unida + Auditor
+2. **Ver ranking** no Painel para acompanhar progressão
+
+---
+
+## 6. Habilidades por Classe (Resumo)
+
+### Níveis Comuns (todas as classes)
+
+| Nível | Habilidade | Implementação |
+|---|---|---|
+| 3 | Guilda Unida | ✅ Automático |
+| 5 | Clarividência | 📋 Manual |
+| 7 | PUG por Nível | 📋 Regra |
+| 9 | Uso de Artefato | 📋 Manual |
+| 15 | Onisciência | 📋 Manual |
+| 17 | Boss Auto-Kill | ✅ Automático |
+
+### Tank (habilidades exclusivas)
+
+| Nível | Habilidade | Implementação |
+|---|---|---|
+| 1 | Melhor Ambiente I | 📋 Manual |
+| 2 | Recrutar +1 e Missionário | 📋 Manual |
+| 4 | Auditor | ✅ Automático |
+| 6 | Melhor Ambiente II | 📋 Manual |
+| 8 | Recrutar +2 e PUG Esperto | 📋 Manual |
+| 10 | Adiantado | 📋 Manual |
+| 12 | Redator | 📋 Manual |
+| 14 | Incapacitar | ✅ Automático |
+
+### Suporte (habilidades exclusivas)
+
+| Nível | Habilidade | Implementação |
+|---|---|---|
+| 1 | Invocar GM | 📋 Manual |
+| 2 | Internerd | ⚡ Alerta |
+| 4 | Abençoar | ⚡ Alerta |
+| 6 | Aparelho Divino | 📋 Manual |
+| 8 | Oração | 📋 Manual |
+| 10 | Clemência | 📋 Manual |
+| 12 | Vidente | 📋 Manual |
+| 14 | Inspiração Divina | 📋 Manual |
+
+### DPS (habilidades exclusivas)
+
+| Nível | Habilidade | Implementação |
+|---|---|---|
+| 1 | Prazo Estendido I | ✅ Automático |
+| 2 | Quest Semanal | ⚡ Alerta |
+| 4 | Tiro Certeiro | ⚡ Alerta |
+| 6 | Prazo Estendido II | ✅ Automático |
+| 8 | Faltei Sim | ✅ Automático |
+| 10 | Innuendo | ⚡ Alerta |
+| 12 | Armado | 📋 Manual |
+| 14 | Ataque Crítico | ⚡ Alerta |
+
+---
+
+## 7. Referências Bibliográficas
+
+1. Deci, E. L., & Ryan, R. M. (1985). *Intrinsic motivation and self-determination in human behavior*. Plenum Press.
+
+2. Deci, E. L., & Ryan, R. M. (2000). The "what" and "why" of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227-268.
+
+3. Csikszentmihalyi, M. (1990). *Flow: The psychology of optimal experience*. Harper & Row.
+
+4. Hattie, J., & Timperley, H. (2007). The power of feedback. *Review of Educational Research, 77*(1), 81-112.
+
+5. Piaget, J. (1970). *Science of education and the psychology of the child*. Viking Press.
+
+6. Vygotsky, L. S. (1978). *Mind in society: The development of higher psychological processes*. Harvard University Press.
+
+7. Ruiz, J. J., Vargas, A. D., & Figueredo, O. R. B. (2024). Impact of gamification on school engagement: a systematic review. *Frontiers in Education, 9*, 1466926.
+
+8. Dehghanzadeh, H., et al. (2024). Gamification in K-12 education: A systematic review. *Education and Information Technologies*.
+
+9. Tauer, J. M., & Harackiewicz, J. M. (2004). The effects of cooperation and competition on intrinsic motivation and performance. *Journal of Personality and Social Psychology, 86*(6), 849-861.
+
+10. Qudsi, H. (2024). Gamification in education: Boosting student engagement and learning outcomes. *ShodhKosh: Journal of Visual and Performing Arts, 5*(4).
+
+---
+
+*Documento gerado em agosto de 2026.*
+*SADA v10 — Sistema de Acompanhamento de Alunos para Biologia.*

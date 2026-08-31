@@ -1,0 +1,24 @@
+{
+  "name": "SADA — Sistema de Acompanhamento de Alunos",
+  "short_name": "SADA",
+  "description": "Sistema gamificado de acompanhamento de alunos para Biologia",
+  "start_url": "login.html",
+  "display": "standalone",
+  "background_color": "#161c17",
+  "theme_color": "#d4b483",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

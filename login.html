@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SADA — Login</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4b483">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SADA">
+<link rel="apple-touch-icon" href="icon-192.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #161c17;
+    --surface: #1f261f;
+    --surface-alt: #262f26;
+    --border: rgba(232,227,211,0.09);
+    --text: #e8e3d3;
+    --text-dim: #9aa190;
+    --gold: #d4b483;
+    --tank: #6b8f5e;
+    --danger: #c1584a;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(107,143,94,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(79,169,162,0.05), transparent 40%);
+    color: var(--text);
+    font-family: 'Work Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 28px 18px;
+  }
+  .login-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .brand-eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px;
+    text-align:center;
+  }
+  h1{
+    font-family:'Fraunces', serif; font-weight: 600; font-size: 32px;
+    margin: 0 0 24px; text-align:center;
+  }
+  label{
+    font-size: 12px; color: var(--text-dim); display:block; margin-bottom:5px;
+    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:0.04em;
+  }
+  input{
+    width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 12px; border-radius: 9px; font-family:'Work Sans', sans-serif; font-size: 14px;
+    margin-bottom: 14px;
+  }
+  input:focus{ outline: none; border-color: var(--gold); }
+  button{
+    font-family:'Work Sans', sans-serif; font-weight: 600; font-size: 14px; border: none;
+    border-radius: 10px; padding: 11px 18px; cursor: pointer; width:100%;
+    background: var(--gold); color: #22231a;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  button:hover{ transform: translateY(-1px); opacity:0.92; }
+  button:active{ transform: translateY(0); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+  button.ghost{ background: transparent; border: 1px solid var(--border); color: var(--text); margin-top:10px; }
+  .msg{ margin-top:14px; font-size:13px; text-align:center; min-height:20px; }
+  .msg.erro{ color: var(--danger); }
+  .msg.sucesso{ color: var(--tank); }
+  .divider{ border:none; border-top:1px solid var(--border); margin:20px 0; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <p class="brand-eyebrow">Biologia · Turmas 2027</p>
+  <h1>SADA</h1>
+
+  <div id="loginForm">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="seu@email.com" autocomplete="email">
+
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+
+    <button id="entrarBtn">Entrar</button>
+
+    <hr class="divider">
+
+    <button id="criarBtn" class="ghost">Criar conta</button>
+
+    <p class="msg" id="msg"></p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDO6OkBEJf-uf3gtgar8F81hwB6xvgO-pg",
+    authDomain: "sada-2027.firebaseapp.com",
+    projectId: "sada-2027",
+    storageBucket: "sada-2027.firebasestorage.app",
+    messagingSenderId: "459893272948",
+    appId: "1:459893272948:web:7868d393e3bd66f8c3fc21"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  const msgEl = document.getElementById('msg');
+
+  // Se já está logado, redireciona
+  auth.onAuthStateChanged(user => {
+    if(user){
+      window.location.href = 'sada-app-v10.html';
+    }
+  });
+
+  document.getElementById('entrarBtn').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    msgEl.className = 'msg';
+    msgEl.textContent = '';
+
+    if(!email || !senha){
+      msgEl.className = 'msg erro';
+      msgEl.textContent = 'Preencha email e senha.';
+      return;
+    }
+
+    try{
+      await auth.signInWithEmailAndPassword(email, senha);
+    }catch(err){
+      msgEl.className = 'msg erro';
+      if(err.code === 'auth/user-not-found') msgEl.textContent = 'Usuário não encontrado.';
+      else if(err.code === 'auth/wrong-password') msgEl.textContent = 'Senha incorreta.';
+      else if(err.code === 'auth/invalid-email') msgEl.textContent = 'Email inválido.';
+      else if(err.code === 'auth/too-many-requests') msgEl.textContent = 'Muitas tentativas. Aguarde.';
+      else msgEl.textContent = 'Erro ao entrar: ' + err.message;
+    }
+  });
+
+  document.getElementById('criarBtn').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    msgEl.className = 'msg';
+    msgEl.textContent = '';
+
+    if(!email || !senha){
+      msgEl.className = 'msg erro';
+      msgEl.textContent = 'Preencha email e senha para criar a conta.';
+      return;
+    }
+    if(senha.length < 6){
+      msgEl.className = 'msg erro';
+      msgEl.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+      return;
+    }
+
+    try{
+      await auth.createUserWithEmailAndPassword(email, senha);
+      msgEl.className = 'msg sucesso';
+      msgEl.textContent = 'Conta criada! Entrando...';
+    }catch(err){
+      msgEl.className = 'msg erro';
+      if(err.code === 'auth/email-already-in-use') msgEl.textContent = 'Este email já está em uso.';
+      else if(err.code === 'auth/invalid-email') msgEl.textContent = 'Email inválido.';
+      else if(err.code === 'auth/weak-password') msgEl.textContent = 'Senha muito fraca.';
+      else msgEl.textContent = 'Erro ao criar conta: ' + err.message;
+    }
+  });
+
+  // Enter no campo de senha faz login
+  document.getElementById('senha').addEventListener('keydown', e => {
+    if(e.key === 'Enter') document.getElementById('entrarBtn').click();
+  });
+</script>
+
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+
+</body>
+</html>
