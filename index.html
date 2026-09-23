@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SADA — Sistema de Acompanhamento de Alunos</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4b483">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SADA">
+<link rel="apple-touch-icon" href="icon-192.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #161c17;
+    --surface: #1f261f;
+    --surface-alt: #262f26;
+    --border: rgba(232,227,211,0.09);
+    --text: #e8e3d3;
+    --text-dim: #9aa190;
+    --gold: #d4b483;
+    --tank: #6b8f5e;
+    --suporte: #4fa9a2;
+    --dps: #d9924a;
+    --danger: #c1584a;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(107,143,94,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(79,169,162,0.05), transparent 40%);
+    color: var(--text);
+    font-family: 'Work Sans', sans-serif;
+    min-height:100vh;
+    padding: 28px 18px 80px;
+  }
+  .wrap{ max-width: 1100px; margin:0 auto; }
+
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    flex-wrap:wrap; gap:16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .brand-eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px;
+  }
+  h1{ font-family:'Fraunces', serif; font-weight: 600; font-size: 32px; margin: 0; letter-spacing: -0.01em; }
+
+  .status{
+    display:flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim);
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 7px 13px; border-radius: 100px;
+  }
+  .status .dot{ width:8px; height:8px; border-radius:50%; background: var(--danger); transition: background 0.3s ease; }
+  .status.ok .dot{ background: var(--tank); }
+
+  .nav{ display:flex; gap:8px; margin-bottom: 22px; }
+  .nav-btn{
+    font-family:'Fraunces', serif; font-weight:600; font-size: 14px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+    padding: 10px 18px; border-radius: 10px; cursor:pointer;
+  }
+  .nav-btn.active{ background: var(--surface-alt); color: var(--gold); border-color: var(--gold); }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .panel{
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px; margin-bottom: 20px;
+  }
+  .panel h2{ font-family:'Fraunces', serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .panel p.hint{ color: var(--text-dim); font-size: 13px; line-height:1.5; margin: 0 0 16px; max-width: 640px; }
+
+  label{ font-size: 12px; color: var(--text-dim); display:block; margin-bottom:5px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:0.04em; }
+  input, select{
+    width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 12px; border-radius: 9px; font-family:'Work Sans', sans-serif; font-size: 14px;
+  }
+  input:focus, select:focus{ outline: none; border-color: var(--gold); }
+
+  .form-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; margin-bottom: 16px; }
+
+  button{
+    font-family:'Work Sans', sans-serif; font-weight: 600; font-size: 14px; border: none;
+    border-radius: 10px; padding: 11px 18px; cursor: pointer; background: var(--gold); color: #22231a;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  button:hover{ transform: translateY(-1px); opacity:0.92; }
+  button:active{ transform: translateY(0); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+  button.ghost{ background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.danger{ background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 10px; font-size:12px; }
+
+  .tabs{ display:flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab{
+    font-family:'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 8px 14px; border-radius: 8px; background: transparent; border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer;
+  }
+  .tab.active{ background: var(--surface-alt); color: var(--gold); border-color: var(--gold); }
+  .tab-group{ margin-bottom: 10px; }
+  .tab-group-label{ font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+
+  .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .grid.ranking{ display:flex; flex-direction:column; gap: 10px; }
+
+  .rank-number{
+    font-family:'Fraunces', serif; font-weight:700; font-size: 20px; color: var(--text-dim);
+    width: 30px; text-align:center; flex-shrink:0;
+  }
+  .rank-number.gold{ color: #e8c468; }
+  .rank-number.silver{ color: #cfd3c9; }
+  .rank-number.bronze{ color: #cd8a52; }
+
+  .grid.ranking .card{ display:flex; flex-direction:column; }
+  .grid.ranking .card-top{ margin-bottom:10px; }
+  .grid.ranking .card-name{ font-size: 16px; white-space:normal; }
+  .grid.ranking .card-side{ display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0; }
+  .grid.ranking .mission-btn{ width:auto; margin-top:0; white-space:nowrap; }
+
+  .card{
+    background: var(--surface-alt); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    position: relative; overflow: hidden; animation: rise 0.3s ease both; cursor:pointer;
+  }
+  @keyframes rise{ from{ opacity:0; transform: translateY(6px);} to{ opacity:1; transform: translateY(0);} }
+  .card::before{ content:''; position:absolute; left:0; top:0; bottom:0; width: 4px; background: var(--class-color, var(--tank)); }
+
+  .card-top{ display:flex; align-items:center; gap: 12px; margin-bottom: 12px; }
+  .ring-wrap{ flex-shrink:0; width:52px; height:52px; }
+  .card-info{ flex:1; min-width:0; }
+  .card-name{ font-family:'Fraunces', serif; font-weight: 600; font-size: 15px; margin:0 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-meta{ font-size: 11px; color: var(--text-dim); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+  .class-pill{
+    font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 100px; color: var(--bg); background: var(--class-color, var(--tank)); font-weight: 600;
+  }
+  .xp-row{ display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); margin-bottom: 5px; }
+  .xp-track{ height: 6px; border-radius: 100px; background: rgba(255,255,255,0.06); overflow:hidden; }
+  .xp-fill{ height:100%; background: var(--class-color, var(--tank)); border-radius: 100px; transition: width 0.4s ease; }
+
+  .abilities-panel{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); display:none; }
+  .card.expanded .abilities-panel{ display:block; }
+  .ability-item{ font-size:12px; margin-bottom:8px; }
+  .ability-item .ab-name{ color: var(--gold); font-weight:600; display:block; margin-bottom:2px; }
+  .ability-item .ab-desc{ color: var(--text-dim); line-height:1.4; }
+  .abilities-empty{ font-size:12px; color:var(--text-dim); font-style:italic; }
+
+  .empty{ text-align:center; padding: 50px 20px; color: var(--text-dim); font-size: 14px; grid-column: 1/-1; }
+  .empty strong{ color: var(--text); display:block; margin-bottom:6px; font-family:'Fraunces', serif; font-size:17px; font-weight:600; }
+
+  .roster-row{
+    display:flex; align-items:center; gap:12px; padding: 10px 12px; border-radius:10px;
+    background: var(--surface-alt); border: 1px solid var(--border); margin-bottom:8px; font-size:13px;
+  }
+  .roster-row .rn{ font-weight:600; flex:1; }
+  .roster-row .rmeta{ color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:11px; }
+
+  .cal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .cal-header h3{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; margin:0; text-transform:capitalize; }
+  .cal-nav-btn{ background: var(--surface-alt); border:1px solid var(--border); color:var(--text); width:32px; height:32px; border-radius:8px; padding:0; font-size:14px; }
+  .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:4px; margin-bottom:18px; }
+  .cal-weekday{
+    text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:var(--text-dim); text-transform:uppercase; padding:4px 0;
+  }
+  .cal-day{
+    height: 42px; background: var(--surface-alt); border:1px solid var(--border); border-radius:9px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
+    font-family:'JetBrains Mono', monospace; font-size:13px; position:relative; color: var(--text);
+  }
+  .cal-day.other-month{ opacity: 0.3; }
+  .cal-day.has-aula{ border-color: var(--gold); background: rgba(212,180,131,0.08); }
+  .cal-day.today{ border-color: var(--gold); }
+  .cal-day.selected{ background: var(--gold); color:#22231a; font-weight:700; }
+  .cal-day .dots{ display:flex; gap:2px; position:absolute; bottom:5px; }
+  .cal-day .dot{ width:5px; height:5px; border-radius:50%; background: var(--tank); }
+  .cal-day .dot.diario{ background: var(--suporte); }
+  .cal-detail{ background: var(--surface-alt); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .cal-detail h4{ font-family:'Fraunces', serif; font-size:15px; margin:0 0 10px; text-transform:capitalize; }
+  .cal-attend-list{ font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.6; }
+  .cal-attend-list strong{ color:var(--text); }
+  textarea{
+    width:100%; background: var(--bg); border:1px solid var(--border); color:var(--text);
+    padding:10px 12px; border-radius:9px; font-family:'Work Sans', sans-serif; font-size:13px;
+    min-height:90px; resize:vertical; margin-bottom:10px;
+  }
+  textarea:focus{ outline:none; border-color: var(--gold); }
+
+  .log-tipo{
+    font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 2px 8px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .log-valor{ font-family:'JetBrains Mono', monospace; font-weight:600; font-size:13px; min-width:60px; text-align:right; }
+  .log-valor.positivo{ color: var(--tank); }
+  .log-valor.negativo{ color: var(--danger); }
+  .log-row{ opacity:1; transition: opacity 0.2s ease; }
+  .log-row.revertido{ opacity:0.4; }
+  .log-detalhe{ color: var(--text-dim); font-size:11px; flex-basis:100%; margin-top:2px; }
+  .log-data{ font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text-dim); min-width:120px; }
+  .undo-btn{ background: transparent; border:1px solid var(--danger); color: var(--danger); padding:5px 10px; font-size:11px; }
+  .revertido-tag{ font-family:'JetBrains Mono', monospace; font-size:10px; color: var(--text-dim); font-style:italic; }
+
+  .sync-status{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:var(--radius); background:rgba(255,255,255,0.03); border:1px solid var(--border); margin-bottom:12px; font-size:13px; }
+  .sync-status .dot{ width:8px; height:8px; border-radius:50%; background:var(--text-dim); }
+  .sync-status.ok .dot{ background:var(--accent); }
+  .sync-status.error .dot{ background:var(--danger); }
+  .sync-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .sync-grid button{ width:100%; }
+  .sync-log{ font-size:12px; color:var(--text-dim); margin-top:8px; font-family:'JetBrains Mono',monospace; min-height:18px; }
+  .sync-input-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .sync-input-row input{ flex:1; }
+
+  footer{ text-align:center; color: var(--text-dim); font-size: 12px; font-family:'JetBrains Mono', monospace; margin-top: 36px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="brand-eyebrow">Biologia · Turmas 2027</p>
+      <h1>SADA</h1>
+    </div>
+    <div class="status" id="connStatus">
+      <span class="dot"></span>
+      <span id="connLabel" style="color:var(--gold);">Offline</span>
+      <a href="habilidades.html" style="background:transparent;border:1px solid var(--border);color:var(--gold);padding:4px 10px;font-size:11px;border-radius:6px;cursor:pointer;margin-left:6px;font-family:'JetBrains Mono',monospace;text-decoration:none;">📖 Habilidades</a>
+      <button id="toggleAlertasBtn" onclick="toggleAlertas()" style="background:transparent;border:1px solid var(--border);color:var(--gold);padding:4px 10px;font-size:11px;border-radius:6px;cursor:pointer;margin-left:6px;font-family:'JetBrains Mono',monospace;">⚡ Alertas: ON</button>
+      <button onclick="if(confirm('ATENÇÃO: Todos os dados locais serão apagados permanentemente!')){localStorage.clear();location.reload();}" style="background:transparent;border:1px solid var(--border);color:var(--danger);padding:4px 10px;font-size:11px;border-radius:6px;cursor:pointer;margin-left:6px;font-family:'JetBrains Mono',monospace;">Resetar app</button>
+    </div>
+  </header>
+
+  <div class="nav">
+    <button class="nav-btn active" data-screen="painel">📊 Painel</button>
+    <button class="nav-btn" data-screen="boss">🎯 Boss</button>
+    <button class="nav-btn" data-screen="presenca">📅 Presença</button>
+    <button class="nav-btn" data-screen="log">📜 Log de XP</button>
+    <button class="nav-btn" data-screen="cadastro">➕ Cadastro de Players</button>
+    <button class="nav-btn" data-screen="horarios">🕐 Horários</button>
+    <button class="nav-btn" data-screen="sync">☁️ Sync</button>
+  </div>
+
+  <!-- TELA: PAINEL -->
+  <div class="screen active" id="screen-painel">
+    <div class="panel">
+      <h2>Painel de Players</h2>
+      <p class="hint">Clique em um card para ver as habilidades já desbloqueadas por aquele player. Use as abas abaixo para organizar por série, guilda, classe ou nível.</p>
+
+      <div class="tab-group">
+        <div class="tab-group-label">Série</div>
+        <div class="tabs" id="tabsSerie"></div>
+      </div>
+      <div class="tab-group">
+        <div class="tab-group-label">Classe</div>
+        <div class="tabs" id="tabsClasse">
+          <button class="tab active" data-classe="todos">Todos</button>
+          <button class="tab" data-classe="Tank">Tank</button>
+          <button class="tab" data-classe="Suporte">Suporte</button>
+          <button class="tab" data-classe="DPS">DPS</button>
+        </div>
+      </div>
+      <div class="tab-group">
+        <div class="tab-group-label">Ordenar por</div>
+        <div class="tabs" id="tabsOrdem">
+          <button class="tab active" data-ordem="nivel">🏆 Ranking (XP)</button>
+          <button class="tab" data-ordem="guilda">Guilda</button>
+          <button class="tab" data-ordem="nome">Nome</button>
+        </div>
+      </div>
+
+      <div class="tab-group" id="guildaActionsWrap" style="display:none;">
+        <div class="tab-group-label">Missão em grupo · +200 XP para toda a guilda</div>
+        <div class="tabs" id="guildaActions"></div>
+      </div>
+
+      <div class="grid" id="playerGrid"></div>
+    </div>
+  </div>
+
+  <!-- TELA: BOSS -->
+  <div class="screen" id="screen-boss">
+    <div class="panel">
+      <h2>Criar novo Boss</h2>
+      <p class="hint">Um Boss é qualquer instrumento avaliativo (prova, trabalho) de uma série. Ao lançar a nota de cada player, o XP é calculado automaticamente (nota × 100).</p>
+      <div class="form-grid">
+        <div>
+          <label>Nome do Boss</label>
+          <input type="text" id="bNome" placeholder="Ex: Boss Bimestral 1">
+        </div>
+        <div>
+          <label>Série</label>
+          <select id="bSerie"></select>
+        </div>
+      </div>
+      <button id="createBossBtn">Criar Boss</button>
+      <span id="bossMsg" style="margin-left:12px; font-size:13px; color:var(--text-dim);"></span>
+    </div>
+
+    <div class="panel">
+      <h2>Bosses criados</h2>
+      <p class="hint">Selecione um Boss para lançar as notas.</p>
+      <div class="tabs" id="bossList"></div>
+    </div>
+
+    <div class="panel" id="bossLaunchPanel" style="display:none;">
+      <h2 id="bossLaunchTitle">Lançar notas</h2>
+      <p class="hint">Digite a nota (0 a 10) de cada player. O XP é aplicado assim que você sai do campo. Editar uma nota já lançada ajusta o XP automaticamente.</p>
+      <div id="bossRoster"></div>
+      <div id="incapacitarPanel" style="display:none; margin-top:12px; padding:12px; background:var(--bg-dark); border:1px solid var(--tank); border-radius:10px;">
+        <p style="font-size:13px; color:var(--tank); margin-bottom:8px;">🛡️ <strong>Incapacitar</strong> (Tank Nv14+): Anula 1 questão deste Boss. Todas as notas são recalculadas em porcentagem.</p>
+        <button id="incapacitarBtn" style="background:var(--tank);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-family:'Work Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;">Anular 1 questão (notas ×0.8)</button>
+        <span id="incapacitarMsg" style="margin-left:12px; font-size:12px; color:var(--text-dim);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA: PRESENÇA -->
+  <div class="screen" id="screen-presenca">
+    <div class="panel">
+      <h2>Registrar chamada do dia</h2>
+      <p class="hint">Todo mundo começa marcado como presente. Marque a caixa apenas de quem faltou nesta data.</p>
+      <div class="form-grid">
+        <div>
+          <label>Série</label>
+          <select id="pSerie"></select>
+        </div>
+        <div>
+          <label>Data da aula</label>
+          <select id="pData">
+            <option value="">Selecione a série primeiro</option>
+          </select>
+        </div>
+      </div>
+      <div id="chamadaList" style="margin-bottom:14px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <button id="salvarChamadaBtn">Salvar chamada</button>
+        <button id="darXpBtn" style="background:var(--gold);color:#1a1a1a;border:none;padding:8px 16px;border-radius:8px;font-family:'Work Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;">+100 XP para presentes</button>
+      </div>
+      <span id="chamadaMsg" style="margin-left:12px; font-size:13px; color:var(--text-dim);"></span>
+
+      <div id="xpPanel" style="display:none; margin-top:16px; padding:14px; background:var(--bg-dark); border:1px solid var(--gold-dim); border-radius:12px;">
+        <h3 style="font-family:'Fraunces',serif; font-size:1rem; color:var(--gold); margin-bottom:4px;">Dar +100 XP para presentes</h3>
+        <p class="hint" style="margin-bottom:10px;">Todos começam marcados. Desmarque quem <strong>não fez a lição</strong> para não receber XP.</p>
+        <div id="xpList" style="margin-bottom:12px;"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="confirmarXpBtn" style="background:var(--tank);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-family:'Work Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;">Confirmar XP</button>
+          <button id="cancelarXpBtn" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">Cancelar</button>
+        </div>
+        <span id="xpMsg" style="margin-left:12px; font-size:13px; color:var(--text-dim);"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Fechar o mês · Aplicar XP de assiduidade</h2>
+      <p class="hint">Aplica +400 XP para todo player daquela série que não teve nenhuma falta registrada no mês. Pode clicar quantas vezes quiser — quem já recebeu não recebe de novo.</p>
+      <div class="form-grid">
+        <div>
+          <label>Série</label>
+          <select id="qSerie"></select>
+        </div>
+        <div>
+          <label>Mês</label>
+          <select id="qMes"></select>
+        </div>
+      </div>
+      <button id="fecharMesBtn">Aplicar +400 XP de assiduidade</button>
+      <div id="fechamentoResultado" style="margin-top:14px; font-size:13px; color:var(--text-dim); line-height:1.6;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Calendário da turma</h2>
+      <p class="hint">
+        🟢 verde = chamada registrada nesse dia · 🔵 azul = tem atividade anotada no diário. Clique num dia para ver quem veio e anotar o que foi feito.
+      </p>
+      <div class="form-grid" style="max-width:280px;">
+        <div>
+          <label>Série</label>
+          <select id="cSerie"></select>
+        </div>
+      </div>
+
+      <div class="cal-header">
+        <button class="cal-nav-btn" id="calPrev">‹</button>
+        <h3 id="calLabel"></h3>
+        <button class="cal-nav-btn" id="calNext">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="cal-detail" id="calDetail" style="display:none;">
+        <h4 id="calDetailTitle"></h4>
+        <div class="cal-attend-list" id="calAttendList"></div>
+        <label>Atividades do dia (o que valeu XP, o que foi trabalhado)</label>
+        <textarea id="calDiarioText" placeholder="Ex: Exercícios 1 a 5 da apostila (+100XP), relatório do experimento entregue pelos grupos (+200XP)..."></textarea>
+        <button id="calSaveDiario">Salvar anotação do dia</button>
+        <span id="calSaveMsg" style="margin-left:10px; font-size:12px; color:var(--text-dim);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA: LOG DE XP -->
+  <div class="screen" id="screen-log">
+    <div class="panel">
+      <h2>Log de XP</h2>
+      <p class="hint">Histórico de todo XP dado no sistema (Missão, Guilda, Boss e Assiduidade). Use "Desfazer" para corrigir um lançamento feito por engano — o XP é retirado e o registro fica marcado como revertido, sem apagar o histórico.</p>
+      <div class="form-grid" style="max-width:280px;">
+        <div>
+          <label>Série</label>
+          <select id="logSerie"><option value="todos">Todas</option></select>
+        </div>
+      </div>
+      <div id="logList"></div>
+    </div>
+  </div>
+
+  <!-- TELA: CADASTRO -->
+  <div class="screen" id="screen-cadastro">
+    <div class="panel">
+      <h2>Adicionar novo Player</h2>
+      <p class="hint">Cadastre seus alunos aqui. O XP inicial já vem zerado — depois usaremos os botões de Missão e Boss para dar XP.</p>
+      <div class="form-grid">
+        <div>
+          <label>Nome</label>
+          <input type="text" id="fNome" placeholder="Ex: Ana Souza">
+        </div>
+        <div>
+          <label>Número</label>
+          <input type="number" id="fNumero" placeholder="Ex: 12">
+        </div>
+        <div>
+          <label>Série / Turma</label>
+          <select id="fSerie"></select>
+        </div>
+        <div>
+          <label>Guilda</label>
+          <input type="text" id="fGuilda" placeholder="Ex: Guilda 1">
+        </div>
+        <div>
+          <label>Classe</label>
+          <select id="fClasse">
+            <option value="Tank">Tank</option>
+            <option value="Suporte">Suporte</option>
+            <option value="DPS">DPS</option>
+          </select>
+        </div>
+      </div>
+      <button id="saveBtn">Salvar Player</button>
+      <span id="saveMsg" style="margin-left:12px; font-size:13px; color:var(--text-dim);"></span>
+    </div>
+
+    <div class="panel">
+      <h2>Players cadastrados</h2>
+      <p class="hint">Lista completa. Clique no X para remover um cadastro feito por engano.</p>
+      <div id="rosterFilters" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;"></div>
+      <div id="rosterList"></div>
+    </div>
+  </div>
+
+  <!-- TELA: HORÁRIOS -->
+  <div class="screen" id="screen-horarios">
+    <div class="panel">
+      <h2>Cadastrar horário de aula</h2>
+      <p class="hint">Registre os dias e horários em que cada turma tem aula. O calendário marca esses dias com borda dourada e só permite chamada e conteúdo nestas datas.</p>
+      <div class="form-grid">
+        <div>
+          <label>Turma</label>
+          <select id="hSerie">
+            <option value="1º A">1º A</option>
+            <option value="1º B">1º B</option>
+            <option value="2º A">2º A</option>
+            <option value="2º B">2º B</option>
+            <option value="3º A">3º A</option>
+            <option value="3º B">3º B</option>
+          </select>
+        </div>
+        <div>
+          <label>Dia da semana</label>
+          <select id="hDia">
+            <option value="1">Segunda-feira</option>
+            <option value="2">Terça-feira</option>
+            <option value="3">Quarta-feira</option>
+            <option value="4">Quinta-feira</option>
+            <option value="5">Sexta-feira</option>
+            <option value="6">Sábado</option>
+            <option value="0">Domingo</option>
+          </select>
+        </div>
+        <div>
+          <label>Início</label>
+          <input type="time" id="hInicio" value="07:00">
+        </div>
+        <div>
+          <label>Término</label>
+          <input type="time" id="hFim" value="09:00">
+        </div>
+      </div>
+      <button id="salvarHorarioBtn">Salvar horário</button>
+      <span id="horarioMsg" style="margin-left:12px; font-size:13px; color:var(--text-dim);"></span>
+    </div>
+
+    <div class="panel">
+      <h2>Horários cadastrados</h2>
+      <p class="hint">Horários agrupados por turma. Clique no X para remover.</p>
+      <div id="horarioList"></div>
+    </div>
+  </div>
+
+  <!-- TELA: SYNC -->
+  <div class="screen" id="screen-sync">
+    <div class="panel">
+      <h2>Sincronização Google Drive</h2>
+      <p class="hint">Configure a URL do Google Apps Script deployado para sincronizar dados com o Google Sheets. Num aparelho ainda sem nenhum player salvo, o app puxa do Drive automaticamente ao abrir (com internet). Depois disso, a sincronização é sempre manual — assim, nada que você fizer em sala é sobrescrito sem você mandar.</p>
+
+      <div class="sync-status" id="syncStatus">
+        <span class="dot"></span>
+        <span id="syncLabel">Não configurado</span>
+      </div>
+
+      <div class="sync-input-row">
+        <input type="text" id="syncUrlInput" placeholder="Cole a URL do Apps Script aqui (https://script.google.com/macros/s/XXX/exec)">
+        <button id="saveSyncUrlBtn">Salvar URL</button>
+      </div>
+
+      <div class="sync-grid">
+        <button id="pullDriveBtn">⬇️ Puxar do Drive</button>
+        <button id="pushDriveBtn">⬆️ Enviar para Drive</button>
+      </div>
+
+      <div class="sync-log" id="syncLog"></div>
+
+      <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <p class="hint" style="margin-bottom:8px;"><strong>Como usar:</strong></p>
+        <ol style="font-size:12px; color:var(--text-dim); padding-left:18px; line-height:1.8;">
+          <li><strong>PC:</strong> Cadastre os alunos → clique <strong>⬆️ Enviar para Drive</strong></li>
+          <li><strong>Celular (primeira vez):</strong> Abra o SADA com WiFi → dados são puxados automaticamente, uma única vez</li>
+          <li><strong>Em sala:</strong> Tudo funciona offline, salvo direto no celular (localStorage)</li>
+          <li><strong>Depois da aula:</strong> Com internet, clique em <strong>⬆️ Enviar para Drive</strong> para subir o que foi feito</li>
+          <li><strong>No PC:</strong> Clique em <strong>⬇️ Puxar do Drive</strong> para trazer os dados mais recentes</li>
+        </ol>
+      </div>
+
+      <div style="margin-top:12px;">
+        <details>
+          <summary style="cursor:pointer; font-size:12px; color:var(--accent);">📄 Ver código do Apps Script</summary>
+          <textarea readonly style="width:100%; height:200px; margin-top:8px; font-size:11px; font-family:'JetBrains Mono',monospace; background:rgba(0,0,0,0.2); color:var(--text); border:1px solid var(--border); border-radius:var(--radius); padding:8px; resize:vertical;">function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados");
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var result = [];
+  for (var i = 1; i &lt; data.length; i++) {
+    var obj = {};
+    for (var j = 0; j &lt; headers.length; j++) {
+      obj[headers[j]] = data[i][j];
+    }
+    result.push(obj);
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify(result)
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var body = JSON.parse(e.postData.contents);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados");
+  if (sheet.getLastRow() &gt; 1) {
+    sheet.deleteRows(2, sheet.getLastRow() - 1);
+  }
+  if (body.length &gt; 0) {
+    var headers = Object.keys(body[0]);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+    }
+    body.forEach(function(row) {
+      var values = headers.map(function(h) { return row[h] || ""; });
+      sheet.appendRow(values);
+    });
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify({ success: true, count: body.length })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doDelete(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("dados");
+  if (sheet.getLastRow() &gt; 1) {
+    sheet.deleteRows(2, sheet.getLastRow() - 1);
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify({ success: true })
+  ).setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <footer>SADA · protótipo em construção · build-log-xp-2026-08-28-v11</footer>
+</div>
+
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+
+<script>
+  // ---------- DATA LAYER (localStorage puro) ----------
+  const DB = {
+    get(col){ try{ return JSON.parse(localStorage.getItem('sada_' + col)) || []; }catch(e){ return []; } },
+    set(col, data){ try{ localStorage.setItem('sada_' + col, JSON.stringify(data)); }catch(e){} },
+    getConfig(){ try{ return JSON.parse(localStorage.getItem('sada_config')) || {}; }catch(e){ return {}; } },
+    setConfig(cfg){ try{ localStorage.setItem('sada_config', JSON.stringify(cfg)); }catch(e){} }
+  };
+
+  function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  // ---------- TABELA DE HABILIDADES (fichas SADA 3.0) ----------
+  const HABILIDADES = {
+    Tank: {
+      1: { nome: "Melhor Ambiente I", desc: "Pode sair a qualquer momento da aula para fazer as missões diárias." },
+      2: { nome: "Recrutar +1 e Missionário", desc: "O número de players da guilda é agora de 2 a 7. Pode ganhar 100XP por semana elaborando missões no quadro de missões." },
+      3: { nome: "Guilda Unida", desc: "Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+      4: { nome: "Auditor", desc: "Se todas as fiscalizações estiverem em dia, ganha 1/2 ponto no Boss." },
+      5: { nome: "Clarividência", desc: "Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+      6: { nome: "Melhor Ambiente II", desc: "Pode levar algum outro player para realizar as missões diárias." },
+      7: { nome: "PUG por Nível", desc: "O GM é obrigado a formar PUGs com players do mesmo nível." },
+      8: { nome: "Recrutar +2 e PUG Esperto", desc: "O número de players da guilda é agora de 2 a 8. Pode trazer algum DPS de sua guilda para o PUG do GM." },
+      9: { nome: "Uso de Artefato", desc: "Pode levar uma folha de consulta para qualquer Boss." },
+      10: { nome: "Adiantado", desc: "Pede a correção de um item dissertativo de qualquer Boss. O GM dá certo, meio certo ou errado, e você pode refazer a questão." },
+      12: { nome: "Redator", desc: "Se entregar um trabalho escrito sobre o seminário, não precisa apresentar com o grupo e não sofre penalidade durante o PUG." },
+      14: { nome: "Incapacitar", desc: "Anula uma questão (ou item) em um Boss. O valor do Boss é recalculado em porcentagem." },
+      15: { nome: "Onisciência", desc: "Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+      17: { nome: "Boss Auto-Kill", desc: "Recebe automaticamente a maior nota possível em um Boss." }
+    },
+    Suporte: {
+      1: { nome: "Invocar GM", desc: "Pode tirar dúvidas com o GM sobre qualquer missão." },
+      2: { nome: "Internerd", desc: "Recebe 400XP por mês se postar notícia relevante no mural de missões, ligada aos assuntos vistos em sala." },
+      3: { nome: "Guilda Unida", desc: "Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+      4: { nome: "Abençoar", desc: "Recebe uma questão extra durante o Boss. Se acertar, ganha 1/2 ponto para si e 1/2 ponto para doar a qualquer DPS ou Tank (não cumulativo)." },
+      5: { nome: "Clarividência", desc: "Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+      6: { nome: "Aparelho Divino", desc: "Pode usar o celular para consulta em missões quando necessário, avisando o GM." },
+      7: { nome: "PUG por Nível", desc: "O GM é obrigado a formar PUGs com players do mesmo nível." },
+      8: { nome: "Oração", desc: "Pode responder diariamente UMA missão oralmente ao GM, sem precisar escrevê-la (o Fiscal deve ser avisado)." },
+      9: { nome: "Uso de Artefato", desc: "Pode levar uma folha de consulta para qualquer Boss." },
+      10: { nome: "Clemência", desc: "Pode complementar uma questão de qualquer Boss, se estiver meio certa. Prazo de uma semana após o Boss." },
+      12: { nome: "Vidente", desc: "Pode escolher a data e ordem de qualquer apresentação de Seminário. Em conflito com outro Suporte, prioridade para o maior XP." },
+      14: { nome: "Inspiração Divina", desc: "Pode pedir uma dica do GM durante qualquer Boss (sem confirmação de certo ou errado)." },
+      15: { nome: "Onisciência", desc: "Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+      17: { nome: "Boss Auto-Kill", desc: "Recebe automaticamente a maior nota possível em um Boss." }
+    },
+    DPS: {
+      1: { nome: "Prazo Estendido I", desc: "Anula a fiscalização de UMA missão por dia, no início ou fim da aula, sem perder o XP (recebido na próxima fiscalização)." },
+      2: { nome: "Quest Semanal", desc: "Pode ganhar 100XP por semana comentando nos vídeos e textos do mural de missões." },
+      3: { nome: "Guilda Unida", desc: "Ao fim do mês, após somar todas as fontes de XP, ganha 100XP para cada outro player na guilda com o mesmo nível que você." },
+      4: { nome: "Tiro Certeiro", desc: "Circula uma questão dissertativa do Boss; se acertá-la, ganha mais 1/2 ponto." },
+      5: { nome: "Clarividência", desc: "Pode realizar 5 minutos de consulta de qualquer material impresso antes de qualquer Boss." },
+      6: { nome: "Prazo Estendido II", desc: "Pode anular a fiscalização de TODAS as missões no início da aula, e mais UMA ao fim da aula." },
+      7: { nome: "PUG por Nível", desc: "O GM é obrigado a formar PUGs com players do mesmo nível." },
+      8: { nome: "Faltei Sim", desc: "Até 3 faltas em um mês não anulam sua assiduidade." },
+      9: { nome: "Uso de Artefato", desc: "Pode levar uma folha de consulta para qualquer Boss." },
+      10: { nome: "Innuendo", desc: "Pode passar uma cola pelo GM para qualquer DPS. Se não for percebida, ela chega ao destino." },
+      12: { nome: "Armado", desc: "Pode ter um papel em mãos no seminário sem ser penalizado por isso (uso excessivo ainda penaliza)." },
+      14: { nome: "Ataque Crítico", desc: "Escolhe uma questão dissertativa de qualquer Boss, que valerá um ponto a mais." },
+      15: { nome: "Onisciência", desc: "Pode realizar consulta de qualquer material impresso durante todo o Boss." },
+      17: { nome: "Boss Auto-Kill", desc: "Recebe automaticamente a maior nota possível em um Boss." }
+    }
+  };
+  const CLASS_COLORS = { Tank: 'var(--tank)', Suporte: 'var(--suporte)', DPS: 'var(--dps)' };
+  const MAX_LEVEL = 20;
+
+  function nivelDoXp(xp){ return Math.min(MAX_LEVEL, Math.floor(xp / 1000)); }
+
+  function habilidadesDesbloqueadas(classe, nivel){
+    const tabela = HABILIDADES[classe] || {};
+    const out = [];
+    for(let n = 1; n <= nivel; n++){
+      if(tabela[n]) out.push({ nivel: n, ...tabela[n] });
+    }
+    return out;
+  }
+
+  // ---------- ESTADO ----------
+  let allPlayers = [];
+  let allHorarios = [];
+  let allBosses = [];
+  let allLogs = [];
+  let filtroSerie = null;
+  let filtroClasse = 'todos';
+  let ordem = 'nivel';
+  let expandedId = null;
+  let alertasAtivos = true;
+  let currentBossId = null;
+  let currentBossNotas = {};
+  let notasUnsub = null;
+  let calDate = new Date(); calDate.setDate(1);
+  let calChamadasFeitas = new Set();
+  let calDiarioMap = new Map();
+  let calFaltasMap = new Map();
+  let calSelectedDate = null;
+  let rosterFiltroSerie = 'todas';
+
+  // ---------- NAVEGAÇÃO ENTRE TELAS ----------
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + btn.dataset.screen).classList.add('active');
+    });
+  });
+
+  // ---------- CONEXÃO / DADOS ----------
+  const connStatus = document.getElementById('connStatus');
+  const connLabel = document.getElementById('connLabel');
+
+  const cSerieEl = document.getElementById('cSerie');
+  const pSerieEl = document.getElementById('pSerie');
+  const pDataEl = document.getElementById('pData');
+  const chamadaList = document.getElementById('chamadaList');
+  const chamadaMsg = document.getElementById('chamadaMsg');
+  const MESES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+  function renderAll(){
+    try { renderTabsSerie(); } catch(e) { console.error('renderTabsSerie:', e); }
+    try { renderGrid(); } catch(e) { console.error('renderGrid:', e); }
+    try { renderGuildaActions(); } catch(e) { console.error('renderGuildaActions:', e); }
+    try { renderRoster(); } catch(e) { console.error('renderRoster:', e); }
+    try { populateSerieSelects(); } catch(e) { console.error('populateSerieSelects:', e); }
+    try { if(currentBossId) renderBossRoster(); } catch(e) { console.error('renderBossRoster:', e); }
+    try { if(pSerieEl.value) loadChamada(); } catch(e) { console.error('loadChamada:', e); }
+    try { if(cSerieEl.value) loadCalendarData(); } catch(e) { console.error('loadCalendarData:', e); }
+  }
+
+  function saveLocal(key, data){ DB.set(key, data); }
+  function loadLocal(key){ return DB.get(key); }
+
+  // ---------- GOOGLE DRIVE SYNC ----------
+  const syncUrlInput = document.getElementById('syncUrlInput');
+  const syncLog = document.getElementById('syncLog');
+  const syncStatusEl = document.getElementById('syncStatus');
+  const syncLabelEl = document.getElementById('syncLabel');
+
+  function getSyncUrl(){ return localStorage.getItem('sada_sync_url') || ''; }
+  function setSyncUrl(url){ localStorage.setItem('sada_sync_url', url); }
+  function getLastSync(dir){ return localStorage.getItem('sada_last_sync_' + dir) || ''; }
+  function setLastSync(dir, ts){ localStorage.setItem('sada_last_sync_' + dir, ts); }
+
+  function renderSyncStatus(){
+    const url = getSyncUrl();
+    const lastPush = getLastSync('push');
+    const lastPull = getLastSync('pull');
+    if(url){
+      syncStatusEl.className = 'sync-status ok';
+      let txt = 'Configurado';
+      if(lastPull) txt += ` | Puxado: ${lastPull}`;
+      if(lastPush) txt += ` | Enviado: ${lastPush}`;
+      syncLabelEl.textContent = txt;
+      syncUrlInput.value = url;
+    } else {
+      syncStatusEl.className = 'sync-status';
+      syncLabelEl.textContent = 'Não configurado — cole a URL do Apps Script';
+    }
+  }
+
+  document.getElementById('saveSyncUrlBtn').addEventListener('click', () => {
+    const url = syncUrlInput.value.trim();
+    if(!url){ syncLog.textContent = '❌ Cole a URL do Apps Script'; return; }
+    setSyncUrl(url);
+    renderSyncStatus();
+    syncLog.textContent = '✅ URL salva com sucesso!';
+  });
+
+  async function pullFromDrive(silent){
+    const url = getSyncUrl();
+    if(!url){ if(!silent) syncLog.textContent = '❌ Configure a URL do Apps Script primeiro'; return false; }
+    if(!silent) syncLog.textContent = '⏳ Puxando dados do Drive...';
+    document.getElementById('pullDriveBtn').disabled = true;
+    try{
+      const resp = await fetch(url, { redirect: 'follow' });
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch(e) {
+        if(!silent) syncLog.textContent = '❌ Resposta inválida do servidor (não é JSON). Verifique a URL.';
+        document.getElementById('pullDriveBtn').disabled = false;
+        return false;
+      }
+      if(Array.isArray(data)){
+        saveLocal('players', data);
+        allPlayers = data;
+        renderAll();
+        const now = new Date().toLocaleString('pt-BR');
+        setLastSync('pull', now);
+        renderSyncStatus();
+        if(!silent) syncLog.textContent = `✅ ${data.length} players puxados com sucesso!`;
+        document.getElementById('pullDriveBtn').disabled = false;
+        return true;
+      } else {
+        if(!silent) syncLog.textContent = '❌ Resposta inválida do servidor';
+        document.getElementById('pullDriveBtn').disabled = false;
+        return false;
+      }
+    } catch(e){
+      if(!silent) syncLog.textContent = `❌ Falha ao conectar (${e.message}) — Verifique se o Apps Script foi implantado como "Qualquer pessoa"`;
+      document.getElementById('pullDriveBtn').disabled = false;
+      return false;
+    }
+  }
+
+  async function pushToDrive(){
+    const url = getSyncUrl();
+    if(!url){ syncLog.textContent = '❌ Configure a URL do Apps Script primeiro'; return; }
+    syncLog.textContent = '⏳ Enviando dados para o Drive...';
+    document.getElementById('pushDriveBtn').disabled = true;
+    try{
+      const payload = allPlayers.map(p => ({
+        id: p.id, nome: p.nome || '', turma: p.turma || '', serie: p.serie || '',
+        guilda: p.guilda || '', classe: p.classe || '', xp: p.xp || 0,
+        inimigos: p.inimigos || 0, ausencias: p.ausencias || 0,
+        nota1: p.nota1 || 0, nota2: p.nota2 || 0, nota3: p.nota3 || 0, nota4: p.nota4 || 0,
+        totalizadas: p.totalizadas || false, dataRegistro: p.dataRegistro || ''
+      }));
+      const resp = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow'
+      });
+      const text = await resp.text();
+      let result;
+      try { result = JSON.parse(text); } catch(e) {
+        syncLog.textContent = '❌ Resposta inválida do servidor (não é JSON). Verifique a URL.';
+        document.getElementById('pushDriveBtn').disabled = false;
+        return;
+      }
+      if(result.success){
+        const now = new Date().toLocaleString('pt-BR');
+        setLastSync('push', now);
+        renderSyncStatus();
+        syncLog.textContent = `✅ ${result.count} players enviados com sucesso!`;
+      } else {
+        syncLog.textContent = '❌ Erro ao enviar: ' + (result.error || JSON.stringify(result));
+      }
+    } catch(e){
+      syncLog.textContent = `❌ Falha ao conectar (${e.message}) — Verifique se o Apps Script foi implantado como "Qualquer pessoa"`;
+    }
+    document.getElementById('pushDriveBtn').disabled = false;
+  }
+
+  document.getElementById('pullDriveBtn').addEventListener('click', () => pullFromDrive(false));
+  document.getElementById('pushDriveBtn').addEventListener('click', pushToDrive);
+
+  renderSyncStatus();
+
+  // Carrega tudo do localStorage
+  allPlayers = DB.get('players');
+  allHorarios = DB.get('horarios');
+  allBosses = DB.get('bosses');
+  allLogs = DB.get('xpLog');
+  renderAll();
+  connStatus.classList.add('ok');
+  connLabel.textContent = 'Dados locais';
+
+  // Puxa do Drive automaticamente e em silêncio ao abrir, MAS só quando o celular ainda não tem
+  // nenhum player salvo localmente (primeira vez usando neste aparelho). Se já existem dados locais,
+  // NÃO puxa sozinho — puxar sobrescreveria silenciosamente alterações feitas em sala e ainda não
+  // enviadas ao Drive (ex: chamada e XP dados na aula anterior). Nesses casos, o professor decide
+  // manualmente quando puxar, usando o botão.
+  if(getSyncUrl() && navigator.onLine && allPlayers.length === 0){
+    pullFromDrive(true);
+  }
+
+  const DIAS_PT_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
+  function isDiaComAula(serie, dateStr){
+    const d = new Date(dateStr + 'T12:00:00');
+    const diaSemana = d.getDay();
+    return allHorarios.some(h => h.serie === serie && h.diaSemana === diaSemana);
+  }
+
+  document.getElementById('salvarHorarioBtn').addEventListener('click', async () => {
+    const serie = document.getElementById('hSerie').value;
+    const diaSemana = parseInt(document.getElementById('hDia').value);
+    const horaInicio = document.getElementById('hInicio').value;
+    const horaFim = document.getElementById('hFim').value;
+    const msg = document.getElementById('horarioMsg');
+
+    if(!serie){
+      msg.textContent = 'Selecione uma turma.';
+      msg.style.color = 'var(--danger)';
+      return;
+    }
+
+    const exists = allHorarios.some(h => h.serie === serie && h.diaSemana === diaSemana && h.horaInicio === horaInicio && h.horaFim === horaFim);
+    if(exists){
+      msg.textContent = 'Este horário já está cadastrado.';
+      msg.style.color = 'var(--danger)';
+      return;
+    }
+
+    const newHorario = { id: 'h_' + Date.now(), serie, diaSemana, horaInicio, horaFim };
+    allHorarios.push(newHorario);
+    saveLocal('horarios', allHorarios);
+
+    // Salva localmente
+    renderHorarios();
+    renderCalendarGrid();
+    populateSerieSelects();
+    popularDatasAula();
+    msg.textContent = 'Horário salvo!';
+    msg.style.color = 'var(--tank)';
+  });
+
+  function renderHorarios(){
+    const container = document.getElementById('horarioList');
+    if(allHorarios.length === 0){
+      container.innerHTML = `<div class="empty"><strong>Nenhum horário cadastrado</strong>Use o formulário acima para começar.</div>`;
+      return;
+    }
+    const grouped = {};
+    allHorarios.forEach(h => {
+      if(!grouped[h.serie]) grouped[h.serie] = [];
+      grouped[h.serie].push(h);
+    });
+    let html = '';
+    for(const [serie, horarios] of Object.entries(grouped)){
+      html += `<div style="margin-bottom:16px;">`;
+      html += `<div style="font-family:'Fraunces',serif; font-weight:600; font-size:14px; margin-bottom:8px; color:var(--gold);">${serie}</div>`;
+      horarios.forEach(h => {
+        html += `
+          <div class="roster-row">
+            <span class="rn">${DIAS_PT_SEMANA[h.diaSemana]}</span>
+            <span class="rmeta">${h.horaInicio} às ${h.horaFim}</span>
+            <button class="danger" data-del-horario="${h.id}">✕</button>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('[data-del-horario]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Remover este horário?')) return;
+        const id = btn.dataset.delHorario;
+        allHorarios = allHorarios.filter(h => h.id !== id);
+        saveLocal('horarios', allHorarios);
+        renderHorarios();
+        renderCalendarGrid();
+        populateSerieSelects();
+        popularDatasAula();
+      });
+    });
+  }
+
+  // ---------- ANEL DE NÍVEL (SVG) ----------
+  function growthRing(nivel, xpIntoLevel, colorVar){
+    const size = 52, stroke = 4, r = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * r;
+    const progress = nivel >= MAX_LEVEL ? 1 : Math.max(0, Math.min(1, xpIntoLevel / 1000));
+    const dash = circumference * progress;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${r-8}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r-4}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="${stroke}"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${colorVar}" stroke-width="${stroke}"
+          stroke-dasharray="${dash} ${circumference}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/>
+        <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle"
+          font-family="JetBrains Mono, monospace" font-size="15" font-weight="600" fill="#e8e3d3">${nivel}</text>
+      </svg>`;
+  }
+
+  // ---------- ABAS DE SÉRIE (dinâmicas, a partir dos dados) ----------
+  function renderTabsSerie(){
+    const series = [...new Set(allPlayers.map(p => p.serie).filter(Boolean))].sort();
+    if(filtroSerie === null && series.length) filtroSerie = series[0];
+    const container = document.getElementById('tabsSerie');
+    if(series.length === 0){
+      container.innerHTML = `<span style="font-size:12px;color:var(--text-dim);">Cadastre um player para ver as séries aqui</span>`;
+      return;
+    }
+    container.innerHTML = series.map(s =>
+      `<button class="tab ${s === filtroSerie ? 'active' : ''}" data-serie="${s}">${s}</button>`
+    ).join('');
+    container.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => { filtroSerie = tab.dataset.serie; renderTabsSerie(); renderGrid(); renderGuildaActions(); renderBossSerieOptions(); });
+    });
+  }
+
+  document.getElementById('tabsClasse').addEventListener('click', e => {
+    if(!e.target.dataset.classe) return;
+    document.querySelectorAll('#tabsClasse .tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    filtroClasse = e.target.dataset.classe;
+    renderGrid();
+  });
+
+  document.getElementById('tabsOrdem').addEventListener('click', e => {
+    if(!e.target.dataset.ordem) return;
+    document.querySelectorAll('#tabsOrdem .tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    ordem = e.target.dataset.ordem;
+    renderGrid();
+  });
+
+  // ---------- RENDER DO PAINEL ----------
+
+  function toggleAlertas(){
+    alertasAtivos = !alertasAtivos;
+    const btn = document.getElementById('toggleAlertasBtn');
+    btn.textContent = alertasAtivos ? '⚡ Alertas: ON' : '⚡ Alertas: OFF';
+    btn.style.color = alertasAtivos ? 'var(--gold)' : 'var(--text-dim)';
+    renderGrid();
+  }
+
+  function renderAlertas(p, nivel){
+    if(!alertasAtivos) return '';
+    const alerts = [];
+    const hoje = new Date().toISOString().slice(0,10);
+
+    if(p.classe === 'Tank' && nivel >= 2){
+      alerts.push({ icon:'📋', text:'Pode criar missão no quadro (+100XP/semana)', color:'var(--tank)' });
+    }
+    if(p.classe === 'Suporte' && nivel >= 2){
+      alerts.push({ icon:'📰', text:'Pode postar notícia relevante no mural (+400XP/mês)', color:'var(--suporte)' });
+    }
+    if(p.classe === 'Suporte' && nivel >= 4){
+      alerts.push({ icon:'✨', text:'Abençoar disponível em Boss (quest extra +0.5)', color:'var(--suporte)' });
+    }
+    if(p.classe === 'DPS' && nivel >= 2){
+      alerts.push({ icon:'💬', text:'Pode comentar no mural (+100XP/semana)', color:'var(--dps)' });
+    }
+    if(p.classe === 'DPS' && nivel >= 4){
+      alerts.push({ icon:'🎯', text:'Tiro Certeiro disponível em Boss (quest +0.5)', color:'var(--dps)' });
+    }
+    if(p.classe === 'DPS' && nivel >= 10){
+      alerts.push({ icon:'🤫', text:'Innuendo disponível em Boss (passar cola)', color:'var(--dps)' });
+    }
+    if(p.classe === 'DPS' && nivel >= 14){
+      alerts.push({ icon:'💥', text:'Ataque Crítico disponível em Boss (quest vale +1)', color:'var(--dps)' });
+    }
+
+    if(alerts.length === 0) return '';
+    return `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--gold-dim);">
+      <div style="font-size:11px; color:var(--gold); font-weight:600; margin-bottom:6px;">⚡ Ações disponíveis hoje:</div>
+      ${alerts.map(a => `<div style="font-size:11px; color:${a.color}; padding:2px 0;">${a.icon} ${a.text}</div>`).join('')}
+    </div>`;
+  }
+
+  function renderCard(p, rankOptions){
+    const nivel = nivelDoXp(p.xp || 0);
+    const xpIntoLevel = (p.xp || 0) % 1000;
+    const color = CLASS_COLORS[p.classe] || CLASS_COLORS.Tank;
+    const teto = nivel >= MAX_LEVEL ? (p.xp || 0) : (nivel + 1) * 1000;
+    const abilities = habilidadesDesbloqueadas(p.classe, nivel);
+    const isExpanded = expandedId === p.id;
+    const isRanking = !!rankOptions;
+
+    const rankBadge = isRanking ? (() => {
+      const pos = rankOptions.index + 1;
+      const tier = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
+      return `<span class="rank-number ${tier}">#${pos}</span>`;
+    })() : '';
+
+    // No ranking, a barra representa o XP relativo ao maior XP da lista (comparação visual).
+    // Fora do ranking, a barra representa o progresso dentro do nível atual.
+    const barWidth = isRanking
+      ? (rankOptions.maxXp > 0 ? Math.max(3, ((p.xp || 0) / rankOptions.maxXp) * 100) : 0)
+      : (nivel >= MAX_LEVEL ? 100 : xpIntoLevel / 10);
+
+    return `
+      <div class="card ${isExpanded ? 'expanded' : ''}" style="--class-color:${color}" data-id="${p.id}">
+        <div class="card-top">
+          ${rankBadge}
+          <div class="ring-wrap">${growthRing(nivel, xpIntoLevel, color)}</div>
+          <div class="card-info">
+            <p class="card-name">${p.nome}</p>
+            <div class="card-meta">
+              <span class="class-pill">${p.classe}</span>
+              <span>${p.guilda || 'sem guilda'}</span>
+              <span>#${p.numero || '-'}</span>
+            </div>
+          </div>
+          ${isRanking ? `<div class="card-side"><button class="mission-btn" data-mission="${p.id}">⚔️ +100 XP</button></div>` : ''}
+        </div>
+        <div class="xp-row"><span>${isRanking ? 'XP total' : 'XP'}</span><span>${p.xp || 0}${isRanking ? '' : ' / ' + teto}</span></div>
+        <div class="xp-track"><div class="xp-fill" style="width:${barWidth}%"></div></div>
+        ${isRanking ? '' : `<button class="mission-btn" data-mission="${p.id}" style="margin-top:10px; width:100%; padding:8px; font-size:12px;">⚔️ Missão · +100 XP</button>`}
+        <div class="abilities-panel">
+          ${abilities.length === 0
+            ? `<div class="abilities-empty">Ainda não desbloqueou nenhuma habilidade.</div>`
+            : abilities.map(a => `
+              <div class="ability-item">
+                <span class="ab-name">Nível ${a.nivel} · ${a.nome}</span>
+                <span class="ab-desc">${a.desc}</span>
+              </div>`).join('')}
+          ${renderAlertas(p, nivel)}
+        </div>
+      </div>`;
+  }
+
+  function renderGrid(){
+    const grid = document.getElementById('playerGrid');
+    let list = allPlayers.filter(p => p.serie === filtroSerie);
+    if(filtroClasse !== 'todos') list = list.filter(p => p.classe === filtroClasse);
+
+    if(ordem === 'nivel') list.sort((a,b) => (b.xp||0) - (a.xp||0));
+    else if(ordem === 'guilda') list.sort((a,b) => (a.guilda||'').localeCompare(b.guilda||''));
+    else if(ordem === 'nome') list.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+
+    if(list.length === 0){
+      grid.classList.remove('ranking');
+      grid.innerHTML = `<div class="empty"><strong>Nenhum player aqui ainda</strong>Cadastre players nessa série na aba "Cadastro de Players".</div>`;
+      return;
+    }
+
+    if(ordem === 'nivel'){
+      grid.classList.add('ranking');
+      const maxXp = Math.max(...list.map(p => p.xp || 0), 1);
+      grid.innerHTML = list.map((p, i) => renderCard(p, { index: i, maxXp })).join('');
+    }else{
+      grid.classList.remove('ranking');
+      grid.innerHTML = list.map(p => renderCard(p)).join('');
+    }
+
+    grid.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', () => {
+        expandedId = expandedId === card.dataset.id ? null : card.dataset.id;
+        renderGrid();
+      });
+    });
+    grid.querySelectorAll('.mission-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        btn.textContent = '+100 XP!';
+        const player = allPlayers.find(p => p.id === btn.dataset.mission);
+        if(player){
+          player.xp = (player.xp || 0) + 100;
+          saveLocal('players', allPlayers);
+          logXp(player, 'Missão', 100, 'Missão individual');
+          renderGrid();
+        }
+      });
+    });
+  }
+
+  function renderGuildaActions(){
+    const wrap = document.getElementById('guildaActionsWrap');
+    const container = document.getElementById('guildaActions');
+    const guildas = [...new Set(allPlayers.filter(p => p.serie === filtroSerie).map(p => p.guilda).filter(Boolean))].sort();
+    if(guildas.length === 0){ wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    container.innerHTML = guildas.map(g => `<button class="tab" data-guilda-action="${g}">🛡️ ${g}</button>`).join('');
+    container.querySelectorAll('[data-guilda-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const guilda = btn.dataset.guildaAction;
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.textContent = 'Aplicando +200 XP...';
+        const targets = allPlayers.filter(p => p.serie === filtroSerie && p.guilda === guilda);
+        targets.forEach(p => {
+          p.xp = (p.xp || 0) + 200;
+          logXp(p, 'Guilda', 200, `Missão em grupo · ${guilda}`);
+        });
+        saveLocal('players', allPlayers);
+        renderAll();
+        btn.textContent = `+200 XP aplicado (${targets.length} players)`;
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+      });
+    });
+  }
+
+  // ---------- BOSS (instrumentos avaliativos) ----------
+  allBosses = loadLocal('bosses');
+
+  function populateSerieSelects(){
+    const seriesFromPlayers = [...new Set(allPlayers.map(p => p.serie).filter(Boolean))].sort();
+    const seriesFromHorarios = [...new Set(allHorarios.map(h => h.serie).filter(Boolean))].sort();
+    const fixedSeries = ['1º A','1º B','2º A','2º B','3º A','3º B'];
+    const allSeries = [...new Set([...fixedSeries, ...seriesFromPlayers, ...seriesFromHorarios])].sort();
+    [document.getElementById('bSerie'), document.getElementById('pSerie'), document.getElementById('qSerie'), document.getElementById('cSerie')].forEach(select => {
+      if(!select) return;
+      const prev = select.value;
+      select.innerHTML = allSeries.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(allSeries.includes(prev)) select.value = prev;
+    });
+
+    const hSelect = document.getElementById('hSerie');
+    if(hSelect){
+      const prevH = hSelect.value;
+      hSelect.innerHTML = allSeries.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(allSeries.includes(prevH)) hSelect.value = prevH;
+    }
+
+    const fSerieEl = document.getElementById('fSerie');
+    if(fSerieEl){
+      const prevF = fSerieEl.value;
+      fSerieEl.innerHTML = allSeries.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(allSeries.includes(prevF)) fSerieEl.value = prevF;
+    }
+
+    const logSelect = document.getElementById('logSerie');
+    if(logSelect){
+      const prevLog = logSelect.value;
+      logSelect.innerHTML = `<option value="todos">Todas</option>` + allSeries.map(s => `<option value="${s}">${s}</option>`).join('');
+      logSelect.value = allSeries.includes(prevLog) || prevLog === 'todos' ? prevLog : 'todos';
+    }
+  }
+
+  function renderBossSerieOptions(){ populateSerieSelects(); }
+
+  document.getElementById('createBossBtn').addEventListener('click', async () => {
+    const nome = document.getElementById('bNome').value.trim();
+    const serie = document.getElementById('bSerie').value;
+    const msg = document.getElementById('bossMsg');
+    if(!nome || !serie){
+      msg.textContent = 'Preencha nome e série.';
+      msg.style.color = 'var(--danger)';
+      return;
+    }
+    const newBoss = { id: 'boss_' + genId(), nome, serie, criadoEm: Date.now() };
+    allBosses.push(newBoss);
+    saveLocal('bosses', allBosses);
+    renderBossList();
+    document.getElementById('bNome').value = '';
+    msg.textContent = `Boss "${nome}" criado!`;
+    msg.style.color = 'var(--tank)';
+  });
+
+  function renderBossList(){
+    const container = document.getElementById('bossList');
+    if(allBosses.length === 0){
+      container.innerHTML = `<span style="font-size:12px;color:var(--text-dim);">Nenhum Boss criado ainda.</span>`;
+      return;
+    }
+    container.innerHTML = allBosses.map(b =>
+      `<button class="tab ${b.id === currentBossId ? 'active' : ''}" data-boss="${b.id}">${b.nome} · ${b.serie}</button>`
+    ).join('');
+    container.querySelectorAll('[data-boss]').forEach(btn => {
+      btn.addEventListener('click', () => selectBoss(btn.dataset.boss));
+    });
+  }
+
+  function selectBoss(bossId){
+    currentBossId = bossId;
+    renderBossList();
+    const boss = allBosses.find(b => b.id === bossId);
+    document.getElementById('bossLaunchPanel').style.display = 'block';
+    document.getElementById('bossLaunchTitle').textContent = `Lançar notas · ${boss.nome} (${boss.serie})`;
+
+    const incapacitarPanel = document.getElementById('incapacitarPanel');
+    const tanksNv14 = allPlayers.filter(p => p.serie === boss.serie && p.classe === 'Tank' && nivelDoXp(p.xp || 0) >= 14);
+    incapacitarPanel.style.display = tanksNv14.length > 0 ? 'block' : 'none';
+
+    if(notasUnsub) notasUnsub();
+    // Carrega notas do localStorage
+    const bossNotas = DB.get('boss_notas_' + bossId);
+    currentBossNotas = {};
+    if(Array.isArray(bossNotas)){
+      bossNotas.forEach(n => currentBossNotas[n.playerId] = n);
+    }
+    renderBossRoster();
+    notasUnsub = () => {};
+  }
+
+  function renderBossRoster(){
+    if(!currentBossId) return;
+    const boss = allBosses.find(b => b.id === currentBossId);
+    if(!boss) return;
+    const container = document.getElementById('bossRoster');
+    const list = allPlayers.filter(p => p.serie === boss.serie).sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+    if(list.length === 0){
+      container.innerHTML = `<div class="empty"><strong>Nenhum player nessa série</strong></div>`;
+      return;
+    }
+    container.innerHTML = list.map(p => {
+      const lancada = currentBossNotas[p.id];
+      return `
+        <div class="roster-row" style="flex-wrap:wrap;">
+          <span class="rn">${p.nome}</span>
+          <span class="rmeta">${p.guilda || 'sem guilda'}</span>
+          <input type="number" min="0" max="10" step="0.5" data-nota="${p.id}"
+            value="${lancada ? lancada.nota : ''}" placeholder="Nota"
+            style="width:80px; padding:6px 8px;">
+          <span class="rmeta" data-xpdisplay="${p.id}" style="min-width:90px;">
+            ${lancada ? `+${lancada.xpGiven} XP ✓` : 'sem nota'}
+          </span>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-nota]').forEach(input => {
+      input.addEventListener('change', async () => {
+        const playerId = input.dataset.nota;
+        let nota = parseFloat(input.value);
+        const display = container.querySelector(`[data-xpdisplay="${playerId}"]`);
+        if(isNaN(nota) || nota < 0 || nota > 10){
+          display.textContent = 'nota inválida';
+          return;
+        }
+        const player = allPlayers.find(pl => pl.id === playerId);
+        const nivel = player ? nivelDoXp(player.xp || 0) : 0;
+        if(nivel >= 17 && nota < 10){
+          nota = 10;
+          input.value = 10;
+        }
+        const xpGiven = Math.round(nota * 100);
+        const oldXpGiven = (currentBossNotas[playerId] && currentBossNotas[playerId].xpGiven) || 0;
+        const delta = xpGiven - oldXpGiven;
+
+        // Salva nota no localStorage
+        currentBossNotas[playerId] = { nota, xpGiven };
+        const allNotas = Object.entries(currentBossNotas).map(([pid, data]) => ({ playerId: pid, ...data }));
+        DB.set('boss_notas_' + currentBossId, allNotas);
+
+        // Atualiza XP do player
+        const p = allPlayers.find(pl => pl.id === playerId);
+        if(p){ p.xp = (p.xp || 0) + delta; saveLocal('players', allPlayers); }
+        if(player) logXp(player, 'Boss', delta, `${boss.nome} · nota ${nota}${nivel >= 17 && nota === 10 ? ' (Auto-Kill Nv17)' : ''}`);
+        display.textContent = nivel >= 17 && nota === 10 ? `+${xpGiven} XP ✓ Auto-Kill` : `+${xpGiven} XP ✓`;
+      });
+    });
+  }
+
+  document.getElementById('incapacitarBtn').addEventListener('click', async () => {
+    if(!currentBossId) return;
+    const boss = allBosses.find(b => b.id === currentBossId);
+    const msgEl = document.getElementById('incapacitarMsg');
+    const notasData = DB.get('boss_notas_' + currentBossId);
+    if(!notasData || notasData.length === 0){
+      msgEl.textContent = 'Nenhuma nota lançada neste Boss.';
+      msgEl.style.color = 'var(--danger)';
+      return;
+    }
+    msgEl.textContent = 'Processando...';
+    msgEl.style.color = 'var(--text-dim)';
+    let count = 0;
+    notasData.forEach(n => {
+      const novaNota = Math.round((n.nota * 0.8) * 10) / 10;
+      const novoXp = Math.round(novaNota * 100);
+      const delta = novoXp - n.xpGiven;
+      n.nota = novaNota;
+      n.xpGiven = novoXp;
+      const player = allPlayers.find(p => p.id === n.playerId);
+      if(player){ player.xp = (player.xp || 0) + delta; logXp(player, 'Incapacitar', delta, `${boss.nome} · questão anulada (era ${n.nota}, agora ${novaNota})`); }
+      count++;
+    });
+    DB.set('boss_notas_' + currentBossId, notasData);
+    currentBossNotas = {};
+    notasData.forEach(n => currentBossNotas[n.playerId] = n);
+    saveLocal('players', allPlayers);
+    renderAll();
+    renderBossRoster();
+    msgEl.textContent = `✓ ${count} nota(s) recalculadas (×0.8). Questão anulada!`;
+    msgEl.style.color = 'var(--tank)';
+  });
+
+  // ---------- PRESENÇA / ASSIDUIDADE ----------
+
+  // Data local no formato YYYY-MM-DD, evitando o bug de usar UTC (toISOString) que pode
+  // mostrar o dia/mês errado dependendo do horário e fuso do usuário.
+  function hojeLocalStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function mesLocalStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  // Data de hoje como padrão
+  popularDatasAula();
+  popularMeses();
+
+  function popularDatasAula(){
+    const serie = pSerieEl.value;
+    const dataSelect = pDataEl;
+    if(!serie){
+      dataSelect.innerHTML = `<option value="">Selecione a série primeiro</option>`;
+      return;
+    }
+    const now = new Date();
+    const year = now.getFullYear(), month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = hojeLocalStr();
+    const diasComAula = [...new Set(allHorarios.filter(h => h.serie === serie).map(h => h.diaSemana))];
+    if(diasComAula.length === 0){
+      dataSelect.innerHTML = `<option value="">Nenhum horário cadastrado</option>`;
+      return;
+    }
+    const datasValidas = [];
+    for(let d = 1; d <= daysInMonth; d++){
+      const dateObj = new Date(year, month, d);
+      if(diasComAula.includes(dateObj.getDay())){
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        datasValidas.push({ value: dateStr, label: dateObj.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' }) });
+      }
+    }
+    if(datasValidas.length === 0){
+      dataSelect.innerHTML = `<option value="">Nenhuma aula este mês</option>`;
+      return;
+    }
+    dataSelect.innerHTML = datasValidas.map(d =>
+      `<option value="${d.value}" ${d.value === todayStr ? 'selected' : ''}>${d.label}</option>`
+    ).join('');
+  }
+
+  function popularMeses(){
+    const mesSelect = document.getElementById('qMes');
+    const now = new Date();
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let html = '';
+    for(let y = now.getFullYear(); y <= now.getFullYear() + 1; y++){
+      const maxMes = y === now.getFullYear() ? 11 : (y === now.getFullYear() + 1 ? 0 : 11);
+      const minMes = y === now.getFullYear() ? 0 : 0;
+      for(let m = minMes; m <= maxMes; m++){
+        const value = `${y}-${String(m+1).padStart(2,'0')}`;
+        const label = `${MESES[m]} ${y}`;
+        const selected = (y === now.getFullYear() && m === now.getMonth()) ? 'selected' : '';
+        html += `<option value="${value}" ${selected}>${label}</option>`;
+      }
+    }
+    mesSelect.innerHTML = html;
+  }
+
+  async function loadChamada(){
+    const serie = pSerieEl.value;
+    const data = pDataEl.value;
+    if(!serie || !data){ chamadaList.innerHTML = ''; return; }
+
+    if(!isDiaComAula(serie, data)){
+      chamadaList.innerHTML = `<div style="color:var(--danger); padding:12px; font-size:13px;">Não há aula nesta data para esta turma.</div>`;
+      chamadaMsg.textContent = '';
+      return;
+    }
+
+    const jogadores = allPlayers.filter(p => p.serie === serie).sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+    if(jogadores.length === 0){
+      chamadaList.innerHTML = `<div class="empty"><strong>Nenhum player nessa série</strong></div>`;
+      return;
+    }
+
+    const allFaltas = DB.get('faltas');
+    const faltososHoje = new Set(allFaltas.filter(f => f.data === data).map(f => f.playerId));
+
+    const temDpsNv6 = jogadores.some(p => p.classe === 'DPS' && nivelDoXp(p.xp || 0) >= 6);
+    let btnPerdoarTodos = '';
+    if(temDpsNv6){
+      btnPerdoarTodos = `<button id="perdoarTodosDpsBtn" style="margin-top:8px; background:var(--dps);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;">Prazo Estendido II: Perdoar todos DPS Nv6+</button>`;
+    }
+
+    chamadaList.innerHTML = jogadores.map(p => {
+      const nivel = nivelDoXp(p.xp || 0);
+      const isDpsNv1 = p.classe === 'DPS' && nivel >= 1;
+      const isFaltoso = faltososHoje.has(p.id);
+      let perdoarHtml = '';
+      if(isDpsNv1 && isFaltoso){
+        perdoarHtml = `<label style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--dps); cursor:pointer;">
+          <input type="checkbox" data-perdoar="${p.id}" style="width:auto;">
+          Perdoar
+        </label>`;
+      }
+      return `
+      <div class="roster-row">
+        <span class="rn">${p.nome}</span>
+        <span class="rmeta">${p.guilda || 'sem guilda'}</span>
+        ${perdoarHtml}
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); cursor:pointer;">
+          <input type="checkbox" data-falta="${p.id}" ${isFaltoso ? 'checked' : ''} style="width:auto;">
+          Faltou
+        </label>
+      </div>`;
+    }).join('') + btnPerdoarTodos;
+
+    const perdoarBtn = document.getElementById('perdoarTodosDpsBtn');
+    if(perdoarBtn){
+      perdoarBtn.addEventListener('click', () => {
+        document.querySelectorAll('[data-perdoar]').forEach(cb => { cb.checked = true; });
+        document.querySelectorAll('[data-falta]').forEach(cb => {
+          const playerId = cb.dataset.falta;
+          const player = allPlayers.find(p => p.id === playerId);
+          if(player && player.classe === 'DPS' && nivelDoXp(player.xp || 0) >= 6){
+            cb.checked = false;
+          }
+        });
+        chamadaMsg.textContent = 'Todas as faltas DPS Nv6+ perdoadas (Prazo Estendido II).';
+        chamadaMsg.style.color = 'var(--dps)';
+      });
+    }
+  }
+
+  pSerieEl.addEventListener('change', () => { popularDatasAula(); loadChamada(); });
+  pDataEl.addEventListener('change', loadChamada);
+
+  document.getElementById('salvarChamadaBtn').addEventListener('click', async () => {
+    const serie = pSerieEl.value;
+    const data = pDataEl.value;
+    if(!serie || !data){
+      chamadaMsg.textContent = 'Escolha série e data.';
+      chamadaMsg.style.color = 'var(--danger)';
+      return;
+    }
+    if(!isDiaComAula(serie, data)){
+      chamadaMsg.textContent = 'Não há aula nesta data para esta turma.';
+      chamadaMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const checkboxes = chamadaList.querySelectorAll('[data-falta]');
+    const perdoados = new Set(Array.from(chamadaList.querySelectorAll('[data-perdoar]:checked')).map(cb => cb.dataset.perdoar));
+    
+    // Salva chamada feita
+    let chamadasFeitas = DB.get('chamadas_feitas');
+    chamadasFeitas = chamadasFeitas.filter(c => !(c.data === data && c.serie === serie));
+    chamadasFeitas.push({ id: `${data}_${serie}`, serie, data });
+    DB.set('chamadas_feitas', chamadasFeitas);
+
+    // Atualiza faltas
+    let faltas = DB.get('faltas');
+    // Remove faltas antigas deste dia/série
+    faltas = faltas.filter(f => !(f.data === data && f.serie === serie));
+    // Adiciona as novas
+    checkboxes.forEach(cb => {
+      const playerId = cb.dataset.falta;
+      if(cb.checked && !perdoados.has(playerId)){
+        faltas.push({ id: `${data}_${playerId}`, playerId, serie, data, mes: data.slice(0,7) });
+      }
+    });
+    DB.set('faltas', faltas);
+    const perdoadosCount = perdoados.size;
+    chamadaMsg.textContent = perdoadosCount > 0 ? `Chamada salva! ${perdoadosCount} falta(s) perdoadas (Prazo Estendido).` : 'Chamada salva!';
+    chamadaMsg.style.color = 'var(--tank)';
+    if(cSerieEl.value === serie) loadCalendarData();
+  });
+
+  document.getElementById('darXpBtn').addEventListener('click', async () => {
+    const serie = pSerieEl.value;
+    const data = pDataEl.value;
+    if(!serie || !data){
+      chamadaMsg.textContent = 'Escolha série e data.';
+      chamadaMsg.style.color = 'var(--danger)';
+      return;
+    }
+    if(!isDiaComAula(serie, data)){
+      chamadaMsg.textContent = 'Não há aula nesta data para esta turma.';
+      chamadaMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const jogadores = allPlayers.filter(p => p.serie === serie).sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+    if(jogadores.length === 0){
+      chamadaMsg.textContent = 'Nenhum player nessa série.';
+      chamadaMsg.style.color = 'var(--danger)';
+      return;
+    }
+    const xpListEl = document.getElementById('xpList');
+    xpListEl.innerHTML = jogadores.map(p => `
+      <div class="roster-row">
+        <span class="rn">${p.nome}</span>
+        <span class="rmeta">${p.guilda || 'sem guilda'}</span>
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gold); cursor:pointer;">
+          <input type="checkbox" data-xp-player="${p.id}" checked style="width:auto;">
+          +100 XP
+        </label>
+      </div>`).join('');
+    document.getElementById('xpPanel').style.display = 'block';
+    document.getElementById('xpMsg').textContent = '';
+  });
+
+  document.getElementById('cancelarXpBtn').addEventListener('click', () => {
+    document.getElementById('xpPanel').style.display = 'none';
+  });
+
+  document.getElementById('confirmarXpBtn').addEventListener('click', async () => {
+    const serie = pSerieEl.value;
+    const data = pDataEl.value;
+    const msgEl = document.getElementById('xpMsg');
+    const checkboxes = document.querySelectorAll('[data-xp-player]');
+    const marcados = Array.from(checkboxes).filter(cb => cb.checked);
+    if(marcados.length === 0){
+      msgEl.textContent = 'Nenhum player selecionado.';
+      msgEl.style.color = 'var(--danger)';
+      return;
+    }
+    msgEl.textContent = 'Processando...';
+    msgEl.style.color = 'var(--text-dim)';
+    let count = 0;
+    marcados.forEach(cb => {
+      const playerId = cb.dataset.xpPlayer;
+      const player = allPlayers.find(p => p.id === playerId);
+      if(!player) return;
+      player.xp = (player.xp || 0) + 100;
+      logXp(player, 'Chamada', 100, `Presente em ${data}`);
+      count++;
+    });
+    saveLocal('players', allPlayers);
+    renderAll();
+    msgEl.textContent = `${count} player(s) receberam +100 XP!`;
+    msgEl.style.color = 'var(--tank)';
+    document.getElementById('xpPanel').style.display = 'none';
+  });
+
+  document.getElementById('fecharMesBtn').addEventListener('click', async () => {
+    const serie = document.getElementById('qSerie').value;
+    const mes = document.getElementById('qMes').value;
+    const resultado = document.getElementById('fechamentoResultado');
+    if(!serie || !mes){
+      resultado.textContent = 'Escolha série e mês.';
+      return;
+    }
+    resultado.textContent = 'Calculando...';
+
+    const jogadores = allPlayers.filter(p => p.serie === serie);
+
+    const allFaltas = DB.get('faltas');
+    const faltaCount = {};
+    allFaltas.filter(f => f.mes === mes).forEach(f => {
+      faltaCount[f.playerId] = (faltaCount[f.playerId] || 0) + 1;
+    });
+
+    let assiduidade = DB.get('assiduidade');
+    const jaFechado = new Set(assiduidade.filter(a => a.mes === mes).map(a => a.playerId));
+
+    let ganharam = 0, jaTinhamRecebido = 0, comFaltaCount = 0;
+    const premiados = [];
+
+    jogadores.forEach(p => {
+      const faltas = faltaCount[p.id] || 0;
+      const nivel = nivelDoXp(p.xp || 0);
+      const dpsNv8 = p.classe === 'DPS' && nivel >= 8;
+      const podeReceber = dpsNv8 ? faltas <= 3 : faltas === 0;
+
+      if(!podeReceber){ comFaltaCount++; return; }
+      if(jaFechado.has(p.id)){ jaTinhamRecebido++; return; }
+      p.xp = (p.xp || 0) + 400;
+      assiduidade.push({ playerId: p.id, mes, xp: 400, aplicadoEm: Date.now() });
+      premiados.push(p);
+      ganharam++;
+    });
+    saveLocal('players', allPlayers);
+    DB.set('assiduidade', assiduidade);
+    premiados.forEach(p => logXp(p, 'Assiduidade', 400, `Sem faltas em ${mes}${p.classe === 'DPS' && nivelDoXp(p.xp||0) >= 8 ? ' (Faltei Sim)' : ''}`));
+
+    let guildaUnida = DB.get('guilda_unida');
+    let ganharamGuilda = 0, jaTinhamGuilda = 0;
+    const jaRecebeuGuilda = new Set(guildaUnida.filter(g => g.mes === mes).map(g => g.playerId));
+
+    jogadores.forEach(p => {
+      const nivel = nivelDoXp(p.xp || 0);
+      if(nivel < 3) return;
+      if(jaRecebeuGuilda.has(p.id)) { jaTinhamGuilda++; return; }
+      const mesmaGuilda = jogadores.filter(o => o.id !== p.id && o.guilda === p.guilda && nivelDoXp(o.xp || 0) === nivel);
+      if(mesmaGuilda.length === 0) return;
+      const xpGuilda = mesmaGuilda.length * 100;
+      p.xp = (p.xp || 0) + xpGuilda;
+      guildaUnida.push({ playerId: p.id, mes, xp: xpGuilda, guilda: p.guilda, nivel, aplicadoEm: Date.now() });
+      logXp(p, 'Guilda Unida', xpGuilda, `${mesmaGuilda.length} guilda mate(s) Nv${nivel} em ${mes}`);
+      ganharamGuilda++;
+    });
+    saveLocal('players', allPlayers);
+    DB.set('guilda_unida', guildaUnida);
+
+    let auditorBonus = DB.get('auditor_bonus');
+    let ganharamAuditor = 0;
+    const jaAuditor = new Set(auditorBonus.filter(a => a.mes === mes).map(a => a.playerId));
+
+    jogadores.forEach(p => {
+      const nivel = nivelDoXp(p.xp || 0);
+      if(p.classe !== 'Tank' || nivel < 4) return;
+      if(jaAuditor.has(p.id)) return;
+      const faltas = faltaCount[p.id] || 0;
+      if(faltas > 0) return;
+      p.xp = (p.xp || 0) + 50;
+      auditorBonus.push({ playerId: p.id, mes, xp: 50, aplicadoEm: Date.now() });
+      logXp(p, 'Auditor', 50, `Fiscalizações em dia em ${mes}`);
+      ganharamAuditor++;
+    });
+    saveLocal('players', allPlayers);
+    DB.set('auditor_bonus', auditorBonus);
+
+    resultado.innerHTML = `
+      ✅ <strong style="color:var(--tank)">${ganharam}</strong> player(s) receberam +400 XP de assiduidade.<br>
+      🏰 <strong style="color:var(--gold)">${ganharamGuilda}</strong> player(s) receberam XP de Guilda Unida.<br>
+      🔍 <strong style="color:var(--tank)">${ganharamAuditor}</strong> Tank(s) Nv4+ receberam +50 XP de Auditor.<br>
+      ℹ️ ${jaTinhamRecebido} assiduidade, ${jaTinhamGuilda} guilda e ${jaAuditor.size} auditor já tinham recebido (sem duplicar).<br>
+      ⚠️ ${comFaltaCount} não receberam assiduidade (faltas${comFaltaCount > 0 ? ' — DPS Nv8+ com até 3 faltas perdoados via Faltei Sim' : ''}).`;
+  });
+
+  // ---------- CALENDÁRIO ----------
+  calDate = new Date(); calDate.setDate(1);
+
+  async function loadCalendarData(){
+    const serie = cSerieEl.value;
+    if(!serie){ calChamadasFeitas = new Set(); calDiarioMap = new Map(); calFaltasMap = new Map(); renderCalendarGrid(); return; }
+
+    try{
+      const chamadasFeitas = DB.get('chamadas_feitas').filter(c => c.serie === serie);
+      const diario = DB.get('diario').filter(d => d.serie === serie);
+      const faltas = DB.get('faltas').filter(f => f.serie === serie);
+
+      calChamadasFeitas = new Set(chamadasFeitas.map(c => c.data));
+      calDiarioMap = new Map(diario.map(d => [d.data, d.atividades || '']));
+      calFaltasMap = new Map();
+      faltas.forEach(f => {
+        if(!calFaltasMap.has(f.data)) calFaltasMap.set(f.data, new Set());
+        calFaltasMap.get(f.data).add(f.playerId);
+      });
+
+      renderCalendarGrid();
+      if(calSelectedDate) renderCalendarDetail();
+    }catch(err){
+      console.error('Erro ao carregar calendário:', err);
+      document.getElementById('calGrid').innerHTML = `<div class="empty" style="grid-column:1/-1;">Erro ao carregar o calendário: ${err.message}</div>`;
+    }
+  }
+
+  cSerieEl.addEventListener('change', () => { calSelectedDate = null; document.getElementById('calDetail').style.display = 'none'; loadCalendarData(); });
+
+  document.getElementById('calPrev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1); renderCalendarGrid(); });
+  document.getElementById('calNext').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); renderCalendarGrid(); });
+
+  // Renderiza a grade do calendário imediatamente, mesmo antes de qualquer dado do Firestore chegar
+  renderCalendarGrid();
+
+  function renderCalendarGrid(){
+    try{
+      const year = calDate.getFullYear(), month = calDate.getMonth();
+      document.getElementById('calLabel').textContent = `${MESES_PT[month]} de ${year}`;
+
+      const firstWeekday = new Date(year, month, 1).getDay();
+      const todayStr = hojeLocalStr();
+
+      const startDate = new Date(year, month, 1 - firstWeekday);
+
+      let html = '';
+      const DIAS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      for(const d of DIAS_PT) html += `<div class="cal-weekday">${d}</div>`;
+
+      for(let i = 0; i < 42; i++){
+        const cellDate = new Date(startDate);
+        cellDate.setDate(startDate.getDate() + i);
+        const cellYear = cellDate.getFullYear();
+        const cellMonth = cellDate.getMonth();
+        const cellDay = cellDate.getDate();
+        const dateStr = `${cellYear}-${String(cellMonth+1).padStart(2,'0')}-${String(cellDay).padStart(2,'0')}`;
+        const isCurrentMonth = cellMonth === month && cellYear === year;
+        const hasChamada = calChamadasFeitas.has(dateStr);
+        const hasDiario = calDiarioMap.has(dateStr) && calDiarioMap.get(dateStr).trim() !== '';
+        const classes = ['cal-day'];
+        if(!isCurrentMonth) classes.push('other-month');
+        if(dateStr === todayStr) classes.push('today');
+        if(dateStr === calSelectedDate) classes.push('selected');
+        const serie = cSerieEl.value;
+        if(serie && isDiaComAula(serie, dateStr)) classes.push('has-aula');
+        html += `
+          <div class="${classes.join(' ')}" data-date="${dateStr}">
+            ${cellDay}
+            <div class="dots">
+              ${hasChamada ? '<span class="dot"></span>' : ''}
+              ${hasDiario ? '<span class="dot diario"></span>' : ''}
+            </div>
+          </div>`;
+      }
+
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = html;
+      grid.querySelectorAll('.cal-day[data-date]').forEach(cell => {
+        cell.addEventListener('click', () => { calSelectedDate = cell.dataset.date; renderCalendarGrid(); renderCalendarDetail(); });
+      });
+    }catch(err){
+      console.error('Erro ao desenhar o calendário:', err);
+      const grid = document.getElementById('calGrid');
+      if(grid) grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">Erro ao desenhar o calendário: ${err.message}<br><span style="font-size:11px;">Veja o console (F12) e envie essa mensagem para o suporte.</span></div>`;
+    }
+  }
+
+  function renderCalendarDetail(){
+    const serie = cSerieEl.value;
+    const detail = document.getElementById('calDetail');
+    detail.style.display = 'block';
+
+    const [y,m,d] = calSelectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m-1, d);
+    const diaSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][dateObj.getDay()];
+    document.getElementById('calDetailTitle').textContent = `${diaSemana}, ${d} de ${MESES_PT[m-1]} de ${y}`;
+
+    if(serie && !isDiaComAula(serie, calSelectedDate)){
+      document.getElementById('calAttendList').innerHTML = `<span style="color:var(--danger);">Não há aula nesta data para esta turma.</span>`;
+      document.getElementById('calDiarioText').value = '';
+      document.getElementById('calDiarioText').disabled = true;
+      document.getElementById('calSaveDiario').disabled = true;
+      document.getElementById('calSaveMsg').textContent = '';
+      return;
+    }
+    document.getElementById('calDiarioText').disabled = false;
+    document.getElementById('calSaveDiario').disabled = false;
+
+    const attendList = document.getElementById('calAttendList');
+    const jogadores = allPlayers.filter(p => p.serie === serie);
+    if(!calChamadasFeitas.has(calSelectedDate)){
+      attendList.innerHTML = `Chamada não registrada neste dia.`;
+    }else{
+      const faltososIds = calFaltasMap.get(calSelectedDate) || new Set();
+      const faltosos = jogadores.filter(p => faltososIds.has(p.id));
+      const presentes = jogadores.filter(p => !faltososIds.has(p.id));
+      attendList.innerHTML = `
+        <strong>${presentes.length} presente(s)</strong>${faltosos.length ? ', ' + faltosos.length + ' falta(s): ' + faltosos.map(p=>p.nome).join(', ') : ' · ninguém faltou'}`;
+    }
+
+    document.getElementById('calDiarioText').value = calDiarioMap.get(calSelectedDate) || '';
+    document.getElementById('calSaveMsg').textContent = '';
+  }
+
+  document.getElementById('calSaveDiario').addEventListener('click', async () => {
+    const serie = cSerieEl.value;
+    const texto = document.getElementById('calDiarioText').value.trim();
+    const msg = document.getElementById('calSaveMsg');
+    if(!calSelectedDate || !serie) return;
+    if(!isDiaComAula(serie, calSelectedDate)){
+      msg.textContent = 'Não há aula nesta data para esta turma.';
+      msg.style.color = 'var(--danger)';
+      return;
+    }
+    // Salva diário no localStorage
+    let diario = DB.get('diario');
+    diario = diario.filter(d => !(d.data === calSelectedDate && d.serie === serie));
+    diario.push({ id: `${calSelectedDate}_${serie}`, serie, data: calSelectedDate, atividades: texto, atualizadoEm: Date.now() });
+    DB.set('diario', diario);
+    calDiarioMap.set(calSelectedDate, texto);
+    renderCalendarGrid();
+    msg.textContent = 'Anotação salva!';
+    msg.style.color = 'var(--tank)';
+  });
+
+  // ---------- LOG DE XP ----------
+  function logXp(player, tipo, valor, detalhe){
+    if(!valor) return;
+    const logs = DB.get('xpLog');
+    logs.push({
+      id: 'log_' + genId(),
+      playerId: player.id,
+      nome: player.nome,
+      serie: player.serie,
+      tipo, valor, detalhe,
+      timestamp: Date.now(),
+      revertido: false
+    });
+    DB.set('xpLog', logs);
+  }
+
+  const logSerieEl = document.getElementById('logSerie');
+
+  logSerieEl.addEventListener('change', renderLog);
+
+  function renderLog(){
+    const container = document.getElementById('logList');
+    const serieFiltro = logSerieEl.value;
+    const list = serieFiltro === 'todos' ? allLogs : allLogs.filter(l => l.serie === serieFiltro);
+
+    if(list.length === 0){
+      container.innerHTML = `<div class="empty"><strong>Nenhum XP registrado ainda</strong>Assim que você usar Missão, Guilda, Boss ou Assiduidade, os lançamentos vão aparecer aqui.</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(log => {
+      const positivo = log.valor > 0;
+      const dataFormatada = new Date(log.timestamp).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="roster-row log-row ${log.revertido ? 'revertido' : ''}" data-log="${log.id}">
+          <span class="log-data">${dataFormatada}</span>
+          <span class="rn">${log.nome}</span>
+          <span class="log-tipo">${log.tipo}</span>
+          <span class="log-valor ${positivo ? 'positivo' : 'negativo'}">${positivo ? '+' : ''}${log.valor} XP</span>
+          ${log.revertido
+            ? `<span class="revertido-tag">↩ revertido</span>`
+            : `<button class="undo-btn" data-undo="${log.id}">Desfazer</button>`}
+          ${log.detalhe ? `<span class="log-detalhe">${log.detalhe}</span>` : ''}
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-undo]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const logId = btn.dataset.undo;
+        const log = allLogs.find(l => l.id === logId);
+        if(!log) return;
+        if(!confirm(`Desfazer ${log.valor > 0 ? '+' : ''}${log.valor} XP de ${log.nome} (${log.tipo})?`)) return;
+
+        btn.disabled = true;
+        const player = allPlayers.find(p => p.id === log.playerId);
+        if(player){ player.xp = (player.xp || 0) - log.valor; saveLocal('players', allPlayers); }
+        const logs = DB.get('xpLog');
+        const logEntry = logs.find(l => l.id === logId);
+        if(logEntry){ logEntry.revertido = true; logEntry.revertidoEm = Date.now(); }
+        DB.set('xpLog', logs);
+        renderAll();
+      });
+    });
+  }
+
+  // ---------- CADASTRO ----------
+  const saveBtn = document.getElementById('saveBtn');
+  const saveMsg = document.getElementById('saveMsg');
+
+  saveBtn.addEventListener('click', async () => {
+    const nome = document.getElementById('fNome').value.trim();
+    const numero = document.getElementById('fNumero').value.trim();
+    const serie = document.getElementById('fSerie').value.trim();
+    const guilda = document.getElementById('fGuilda').value.trim();
+    const classe = document.getElementById('fClasse').value;
+
+    if(!nome || !serie){
+      saveMsg.textContent = 'Preencha ao menos Nome e Série.';
+      saveMsg.style.color = 'var(--danger)';
+      return;
+    }
+
+    saveBtn.disabled = true;
+    try{
+      const newPlayer = { id: 'p_' + genId(), nome, numero, serie, guilda, classe, xp: 0, inimigos: 0, ausencias: 0, nota1: 0, nota2: 0, nota3: 0, nota4: 0 };
+      allPlayers.push(newPlayer);
+      saveLocal('players', allPlayers);
+
+      saveMsg.textContent = `"${nome}" cadastrado com sucesso!`;
+      saveMsg.style.color = 'var(--tank)';
+      document.getElementById('fNome').value = '';
+      document.getElementById('fNumero').value = '';
+      document.getElementById('fGuilda').value = '';
+      renderAll();
+    }catch(err){
+      saveMsg.textContent = 'Erro ao salvar: ' + err.message;
+      saveMsg.style.color = 'var(--danger)';
+    }finally{
+      saveBtn.disabled = false;
+    }
+  });
+
+  function renderRoster(){
+    const container = document.getElementById('rosterList');
+    const filtersEl = document.getElementById('rosterFilters');
+
+    const series = [...new Set(allPlayers.map(p => p.serie).filter(Boolean))].sort();
+    if(filtersEl){
+      filtersEl.innerHTML = `<button class="tab-btn ${rosterFiltroSerie === 'todas' ? 'active' : ''}" data-roster-filtro="todas" style="font-size:12px; padding:4px 10px;">Todos</button>` +
+        series.map(s => `<button class="tab-btn ${rosterFiltroSerie === s ? 'active' : ''}" data-roster-filtro="${s}" style="font-size:12px; padding:4px 10px;">${s}</button>`).join('');
+      filtersEl.querySelectorAll('[data-roster-filtro]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          rosterFiltroSerie = btn.dataset.rosterFiltro;
+          renderRoster();
+        });
+      });
+    }
+
+    if(allPlayers.length === 0){
+      container.innerHTML = `<div class="empty"><strong>Nenhum player cadastrado</strong>Use o formulário acima para começar.</div>`;
+      return;
+    }
+
+    let lista = rosterFiltroSerie === 'todas' ? [...allPlayers] : allPlayers.filter(p => p.serie === rosterFiltroSerie);
+    const sorted = lista.sort((a,b) => (a.nome||'').localeCompare(b.nome||'') || (a.serie||'').localeCompare(b.serie||''));
+    container.innerHTML = sorted.map(p => {
+      const nivel = nivelDoXp(p.xp || 0);
+      return `
+      <div class="roster-row" style="flex-wrap:wrap; gap:8px;">
+        <span class="rn">${p.nome}</span>
+        <span class="rmeta">${p.serie} · ${p.classe} · #${p.numero || '-'}</span>
+        <div style="display:flex; align-items:center; gap:4px; font-size:12px;">
+          <span style="color:var(--text-dim);">XP:</span>
+          <input type="number" value="${p.xp || 0}" data-xp-input="${p.id}" style="width:70px; padding:4px 6px; font-size:12px; text-align:center;">
+          <button data-xp-minus="${p.id}" style="background:var(--danger);color:#fff;border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">−</button>
+          <button data-xp-plus="${p.id}" style="background:var(--tank);color:#fff;border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">+</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:4px; font-size:12px;">
+          <span style="color:var(--text-dim);">Guilda:</span>
+          <input type="text" value="${p.guilda || ''}" data-guilda-input="${p.id}" placeholder="sem guilda" style="width:100px; padding:4px 6px; font-size:12px;">
+          <button data-guilda-save="${p.id}" style="background:var(--suporte);color:#fff;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;">OK</button>
+        </div>
+        <span class="rmeta" style="color:var(--gold);">Nv${nivel} · ${p.xp || 0} XP</span>
+        <button class="danger" data-del="${p.id}">✕</button>
+      </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-xp-plus]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.xpPlus;
+        const input = container.querySelector(`[data-xp-input="${id}"]`);
+        const atual = parseInt(input.value) || 0;
+        input.value = atual + 100;
+        const player = allPlayers.find(p => p.id === id);
+        if(player){ player.xp = atual + 100; logXp(player, 'Ajuste XP', 100, 'Ajuste manual (+)'); }
+        saveLocal('players', allPlayers);
+        renderRoster();
+      });
+    });
+
+    container.querySelectorAll('[data-xp-minus]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.xpMinus;
+        const input = container.querySelector(`[data-xp-input="${id}"]`);
+        const atual = parseInt(input.value) || 0;
+        const novo = Math.max(0, atual - 100);
+        input.value = novo;
+        const delta = novo - atual;
+        const player = allPlayers.find(p => p.id === id);
+        if(player){ player.xp = novo; if(delta !== 0) logXp(player, 'Ajuste XP', delta, 'Ajuste manual (−)'); }
+        saveLocal('players', allPlayers);
+        renderRoster();
+      });
+    });
+
+    container.querySelectorAll('[data-guilda-save]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.guildaSave;
+        const input = container.querySelector(`[data-guilda-input="${id}"]`);
+        const novaGuilda = input.value.trim();
+        const player = allPlayers.find(p => p.id === id);
+        if(player) player.guilda = novaGuilda;
+        saveLocal('players', allPlayers);
+        renderRoster();
+      });
+    });
+  }
+</script>
+
+</body>
+</html>

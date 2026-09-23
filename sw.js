@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sada-v2';
+const CACHE_NAME = 'sada-v3';
 const ASSETS = [
   '/',
   '/login.html',
@@ -22,7 +22,12 @@ const EXTERNAL = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS).catch(() => {});
+      return cache.addAll([...ASSETS, ...EXTERNAL]).catch(err => {
+        console.warn('Cache addAll failed, caching individually...');
+        return Promise.allSettled(
+          [...ASSETS, ...EXTERNAL].map(url => cache.add(url).catch(() => {}))
+        );
+      });
     })
   );
   self.skipWaiting();
@@ -40,7 +45,18 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  if(url.hostname.includes('firebaseio.com')){
+  if(url.hostname.includes('firebaseio.com') || url.hostname.includes('googleapis.com')){
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        return fetch(e.request).then(response => {
+          if(response && response.status === 200){
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
+          return response;
+        }).catch(() => cached || new Response('', {status: 503}));
+      })
+    );
     return;
   }
 
